@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "Role": {
+      "title": "Role",
+      "description": "User role assignments by email",
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["superadmin", "admin", "visor"]
+        },
+        "assignedBy": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["role", "updatedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A payment or account record",
+      "type": "object",
+      "properties": {
+        "clientName": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pagado", "Cobrar"]
+        },
+        "date": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "originalData": {
+          "type": "object"
+        },
+        "updatedBy": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["clientName", "amount", "status", "date"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Log of changes made by administrators",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "entityId": {
+          "type": "string"
+        },
+        "entityType": {
+          "type": "string"
+        },
+        "changes": {
+          "type": "string"
+        },
+        "adminEmail": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": ["action", "entityId", "adminEmail", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/roles/{email}": {
+      "schema": {
+        "$ref": "#/entities/Role"
+      },
+      "description": "Roles assigned to users, keyed by user email"
+    },
+    "/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
+      },
+      "description": "Transactions"
+    },
+    "/audit_logs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/AuditLog"
+      },
+      "description": "Audit trail of admin actions"
+    }
+  }
+}

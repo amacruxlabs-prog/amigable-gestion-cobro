@@ -1,0 +1,8 @@
+{
+  "name": "Mouna",
+  "description": "Dashboard de ventas, cuentas pagadas y cuentas por cobrar, sincronizado en tiempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

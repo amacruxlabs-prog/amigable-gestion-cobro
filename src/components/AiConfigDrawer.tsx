@@ -5,7 +5,9 @@ import {
   Settings2, Activity, Play, Check, ChevronRight, AlertTriangle, FileSpreadsheet 
 } from 'lucide-react';
 import { Transaction } from '../types';
-import { db, doc, onSnapshot, setDoc } from '../lib/firebase';
+import { localDb } from '../lib/localDb';
+import { useUI } from '../contexts/UIContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AiConfigDrawerProps {
   isOpen: boolean;
@@ -24,26 +26,25 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
   const [activeTab, setActiveTab] = useState<'chat' | 'settings'>('chat');
   
   // Settings state
+  const { businessId } = useAuth();
   const [tone, setTone] = useState<string>('Analítico y Profesional');
   const [customInstructions, setCustomInstructions] = useState<string>('');
   const [autoAlertLargeDebts, setAutoAlertLargeDebts] = useState<boolean>(true);
   const [suggestEarlyDiscount, setSuggestEarlyDiscount] = useState<boolean>(true);
 
-  // Load from firestore
+  // Load from localDb
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+    const targetBusinessId = businessId || 'demo-business-1';
+    const unsub = localDb.subscribeDoc('settings', targetBusinessId, (data) => {
+      if (data) {
         if (data.aiTone) setTone(data.aiTone);
         if (data.aiInstructions !== undefined) setCustomInstructions(data.aiInstructions);
         if (data.aiAutoAlert !== undefined) setAutoAlertLargeDebts(data.aiAutoAlert);
         if (data.aiSuggestDiscount !== undefined) setSuggestEarlyDiscount(data.aiSuggestDiscount);
       }
-    }, (err) => {
-      console.warn("Global settings ai config snapshot error", err);
     });
     return () => unsub();
-  }, []);
+  }, [businessId]);
 
   // Chat state
   const [chatInput, setChatInput] = useState('');
@@ -66,6 +67,7 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
     ];
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { confirm, toast } = useUI();
   const [showSavedFeedback, setShowSavedFeedback] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,12 +81,13 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
   // Persist settings
   const handleSaveSettings = async () => {
     try {
-      await setDoc(doc(db, 'settings', 'global'), {
+      const targetBusinessId = businessId || 'demo-business-1';
+      localDb.setDoc('settings', targetBusinessId, {
         aiTone: tone,
         aiInstructions: customInstructions,
         aiAutoAlert: autoAlertLargeDebts,
         aiSuggestDiscount: suggestEarlyDiscount
-      }, { merge: true });
+      });
       
       setShowSavedFeedback(true);
       setTimeout(() => {
@@ -97,18 +100,24 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
 
   // Clear Chat History
   const handleClearHistory = () => {
-    if (window.confirm('¿Seguro que deseas reiniciar el historial de chat con la IA?')) {
-      const initial = [
-        {
-          id: 'welcome',
-          role: 'assistant',
-          text: 'Entendido. Historial de conversación restablecido. Estoy listo para tus nuevas consultas sobre las cuotas y cobros del club.',
-          timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-        }
-      ];
-      setMessages(initial);
-      localStorage.setItem('resto_ai_chat_history', JSON.stringify(initial));
-    }
+    confirm({
+      title: 'Limpiar Historial',
+      message: '¿Seguro que deseas reiniciar el historial de chat con la IA?',
+      type: 'danger',
+      onConfirm: () => {
+        const initial = [
+          {
+            id: 'welcome',
+            role: 'assistant',
+            text: 'Entendido. Historial de conversación restablecido. Estoy listo para tus nuevas consultas sobre las cuotas y cobros del club.',
+            timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+          }
+        ];
+        setMessages(initial);
+        localStorage.setItem('resto_ai_chat_history', JSON.stringify(initial));
+        toast('Historial limpiado', 'success');
+      }
+    });
   };
 
   // Save chat history

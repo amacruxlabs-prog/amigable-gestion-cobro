@@ -1,358 +1,260 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth, Role } from '../../contexts/AuthContext';
-import { db, handleFirestoreError, OperationType, collection, query, orderBy, onSnapshot, setDoc, doc, deleteDoc } from '../../lib/firebase';
-import { Shield, Save, Loader2, UserX, Clock, Activity, History, Search, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Shield, 
+  BarChart3, 
+  Building2, 
+  History, 
+  Settings, 
+  X, 
+  Users, 
+  DollarSign,
+  Activity,
+  Plus,
+  PlaySquare,
+  PauseCircle,
+  LogIn
+} from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
-interface RoleUser {
-  email: string;
-  role: Role;
-  updatedAt: string;
-  assignedBy: string;
-}
-
-interface AuditLog {
-  id: string;
-  action: string; // 'abono', 'nueva_cuenta', 'cambio_telefono', etc.
-  entityId: string;
-  adminEmail: string;
-  changes: string;
-  timestamp: string;
-}
+type TabType = 'dashboard' | 'businesses' | 'logs' | 'settings';
 
 export const SuperadminPanel = ({ onClose }: { onClose: () => void }) => {
-  const { isSuperadmin, user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'roles' | 'logs'>('roles');
-  
-  if (!isSuperadmin) return null;
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   return (
-    <div className="fixed inset-0 z-[100] flex">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="w-full max-w-3xl ml-auto bg-white h-full shadow-2xl relative flex flex-col animate-slide-in-right">
-        
-        <header className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-800">Panel de Superadministrador</h2>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email}</p>
-            </div>
+    <div className="fixed inset-0 z-[100] flex bg-slate-100 animate-fade-in">
+      {/* Sidebar */}
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl">
+        <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+          <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg">
+            <Shield className="w-6 h-6" />
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors font-bold text-slate-400 hover:text-slate-600">
-            ✕
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-tight leading-tight">Super Admin</h2>
+            <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{user?.email}</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-1">
+          <SidebarItem 
+            icon={BarChart3} 
+            label="Dashboard General" 
+            isActive={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+          />
+          <SidebarItem 
+            icon={Building2} 
+            label="Gestión de Negocios" 
+            isActive={activeTab === 'businesses'} 
+            onClick={() => setActiveTab('businesses')} 
+          />
+          <SidebarItem 
+            icon={History} 
+            label="Auditoría Global" 
+            isActive={activeTab === 'logs'} 
+            onClick={() => setActiveTab('logs')} 
+          />
+          <SidebarItem 
+            icon={Settings} 
+            label="Ajustes de Plataforma" 
+            isActive={activeTab === 'settings'} 
+            onClick={() => setActiveTab('settings')} 
+          />
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <button 
+            onClick={onClose}
+            className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Cerrar Panel
           </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+        <header className="h-16 border-b border-slate-200 bg-white flex items-center px-8 shadow-sm">
+          <h1 className="text-xl font-bold text-slate-800 capitalize">
+            {activeTab === 'dashboard' && 'Métricas Globales (SaaS)'}
+            {activeTab === 'businesses' && 'Negocios y Tenants'}
+            {activeTab === 'logs' && 'Registro de Actividad'}
+            {activeTab === 'settings' && 'Configuración Maestra'}
+          </h1>
         </header>
 
-        <div className="flex px-6 space-x-4 border-b border-slate-100 pt-4 bg-white">
-          <button
-            onClick={() => setActiveTab('roles')}
-            className={`pb-3 px-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'roles' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            Gestión de Roles
-          </button>
-          <button
-            onClick={() => setActiveTab('logs')}
-            className={`pb-3 px-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'logs' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            Registro de Actividad <History className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex-1 overflow-y-auto p-8">
+          {activeTab === 'dashboard' && <DashboardView />}
+          {activeTab === 'businesses' && <BusinessesView />}
+          {activeTab === 'logs' && <LogsView />}
+          {activeTab === 'settings' && <SettingsView />}
         </div>
-
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50 pb-20">
-          {activeTab === 'roles' ? <RoleManager /> : <AuditLogViewer />}
-        </div>
-      </div>
+      </main>
     </div>
   );
 };
 
-const RoleManager = () => {
-  const [users, setUsers] = useState<RoleUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newEmail, setNewEmail] = useState('');
-  const [newRole, setNewRole] = useState<Role>('visor');
-  const { user } = useAuth();
-  const [saving, setSaving] = useState(false);
+const SidebarItem = ({ icon: Icon, label, isActive, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+      isActive 
+        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20' 
+        : 'hover:bg-slate-800 hover:text-white'
+    }`}
+  >
+    <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+    {label}
+  </button>
+);
 
-  useEffect(() => {
-    const q = query(collection(db, 'roles'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: RoleUser[] = [];
-      snapshot.forEach(d => {
-        data.push({ email: d.id, ...d.data() } as RoleUser);
-      });
-      setUsers(data);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'roles');
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+// --- Sub-Views (Maquetas) ---
 
-  const handleAssignRole = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEmail || !newRole || !user?.email) return;
-    setSaving(true);
-    try {
-      await setDoc(doc(db, 'roles', newEmail.toLowerCase().trim()), {
-        role: newRole,
-        assignedBy: user.email,
-        updatedAt: new Date().toISOString()
-      });
-      setNewEmail('');
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `roles/${newEmail}`);
-    }
-    setSaving(false);
-  };
+const DashboardView = () => (
+  <div className="space-y-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <MetricCard title="Negocios Activos" value="124" subtitle="+12 este mes" icon={Building2} color="text-indigo-600" bg="bg-indigo-100" />
+      <MetricCard title="Ingreso Mensual Recurrente" value="$4,500 USD" subtitle="Suscripciones SaaS" icon={DollarSign} color="text-emerald-600" bg="bg-emerald-100" />
+      <MetricCard title="Volumen de Transacciones" value="15.2M" subtitle="Procesadas globales" icon={Activity} color="text-blue-600" bg="bg-blue-100" />
+    </div>
 
-  const handleUpdateRole = async (email: string, role: Role) => {
-    if (!user?.email) return;
-    try {
-      await setDoc(doc(db, 'roles', email), {
-        role: role,
-        assignedBy: user.email,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `roles/${email}`);
-    }
-  };
+    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-80 flex flex-col">
+      <h3 className="text-sm font-bold text-slate-800 mb-4">Crecimiento de Suscriptores (Mock)</h3>
+      <div className="flex-1 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-center">
+        <p className="text-slate-400 text-sm font-medium">[ Espacio para Gráfico de Líneas ]</p>
+      </div>
+    </div>
+  </div>
+);
 
-  const handleRemoveRole = async (email: string) => {
-    if (!window.confirm(`¿Seguro de revocar todos los accesos a ${email}?`)) return;
-    try {
-      await deleteDoc(doc(db, 'roles', email));
-    } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `roles/${email}`);
-    }
-  };
+const MetricCard = ({ title, value, subtitle, icon: Icon, color, bg }: any) => (
+  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+    <div className={`p-3 rounded-xl ${bg} ${color}`}>
+      <Icon className="w-6 h-6" />
+    </div>
+    <div>
+      <p className="text-sm font-semibold text-slate-500 mb-1">{title}</p>
+      <h4 className="text-2xl font-bold text-slate-800 mb-1">{value}</h4>
+      <p className="text-xs text-slate-400 font-medium">{subtitle}</p>
+    </div>
+  </div>
+);
 
-  if (loading) return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-500" /></div>;
+const BusinessesView = () => {
+  const [showModal, setShowModal] = useState(false);
+  const mockBusinesses = [
+    { id: '1', name: 'Gimnasio Fit Life', owner: 'Carlos P.', email: 'admin@fitlife.com', status: 'ACTIVE', users: 3 },
+    { id: '2', name: 'Condominio Las Rosas', owner: 'Maria G.', email: 'maria@condominio.com', status: 'ACTIVE', users: 2 },
+    { id: '3', name: 'Colegio San Juan', owner: 'Roberto M.', email: 'director@sanjuan.edu', status: 'SUSPENDED', users: 5 },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-        <h3 className="text-sm font-bold text-slate-800 mb-4">Otorgar Nuevo Rol</h3>
-        <form onSubmit={handleAssignRole} className="flex gap-3 items-end">
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Correo Electrónico</label>
-            <input 
-              type="email" 
-              required
-              value={newEmail} 
-              onChange={e => setNewEmail(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="ejemplo@correo.com"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Rol</label>
-            <select
-              value={newRole || ''}
-              onChange={e => setNewRole(e.target.value as Role)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-            >
-              <option value="visor">Visor (Solo Lectura)</option>
-              <option value="admin">Administrador (Puede editar info)</option>
-              <option value="superadmin">Superadmin (Gestión de Roles)</option>
-            </select>
-          </div>
-          <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Asignar
-          </button>
-        </form>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-slate-800">Listado de Inquilinos (Tenants)</h3>
+        <button 
+          onClick={() => setShowModal(true)}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Crear Nuevo Negocio
+        </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
             <tr>
-              <th className="px-5 py-3">Correo</th>
-              <th className="px-5 py-3">Rol Asignado</th>
-              <th className="px-5 py-3">Modificado</th>
-              <th className="px-5 py-3 w-10"></th>
+              <th className="px-6 py-4">Negocio</th>
+              <th className="px-6 py-4">Propietario / Email</th>
+              <th className="px-6 py-4">Estado</th>
+              <th className="px-6 py-4">Usuarios</th>
+              <th className="px-6 py-4 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {users.map(u => (
-              <tr key={u.email} className="hover:bg-slate-50 transition-colors">
-                <td className="px-5 py-3 font-medium text-slate-800">{u.email}</td>
-                <td className="px-5 py-3">
-                  <select
-                    value={u.role || ''}
-                    onChange={e => handleUpdateRole(u.email, e.target.value as Role)}
-                    className="bg-transparent border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-indigo-500"
-                  >
-                    <option value="visor">Visor</option>
-                    <option value="admin">Administrador</option>
-                    <option value="superadmin">Superadmin</option>
-                  </select>
+            {mockBusinesses.map(b => (
+              <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                <td className="px-6 py-4 font-bold text-slate-800">{b.name}</td>
+                <td className="px-6 py-4">
+                  <p className="font-medium text-slate-700">{b.owner}</p>
+                  <p className="text-xs text-slate-500">{b.email}</p>
                 </td>
-                <td className="px-5 py-3 text-xs text-slate-500">
-                  {new Date(u.updatedAt).toLocaleDateString()}
-                  <p className="text-[10px]">por {u.assignedBy}</p>
+                <td className="px-6 py-4">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                    b.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {b.status === 'ACTIVE' ? 'Activo' : 'Suspendido'}
+                  </span>
                 </td>
-                <td className="px-5 py-3 text-right">
-                  <button onClick={() => handleRemoveRole(u.email)} className="text-red-400 hover:text-red-600 transition-colors" title="Revocar Accesos">
-                    <UserX className="w-4 h-4" />
+                <td className="px-6 py-4 text-slate-600 font-mono text-xs">
+                  <Users className="w-3.5 h-3.5 inline mr-1" /> {b.users}
+                </td>
+                <td className="px-6 py-4 text-right space-x-2">
+                  <button className="p-1.5 text-slate-400 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 rounded transition-colors" title="Entrar como este negocio">
+                    <LogIn className="w-4 h-4" />
+                  </button>
+                  <button className="p-1.5 text-slate-400 hover:text-orange-600 bg-slate-100 hover:bg-orange-50 rounded transition-colors" title={b.status === 'ACTIVE' ? 'Suspender' : 'Activar'}>
+                    {b.status === 'ACTIVE' ? <PauseCircle className="w-4 h-4" /> : <PlaySquare className="w-4 h-4" />}
                   </button>
                 </td>
               </tr>
             ))}
-            {users.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-5 py-8 text-center text-slate-500">No hay roles extras asignados.</td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
-    </div>
-  );
-};
 
-const AuditLogViewer = () => {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-
-  useEffect(() => {
-    const q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: AuditLog[] = [];
-      snapshot.forEach(d => {
-        data.push({ id: d.id, ...d.data() } as AuditLog);
-      });
-      setLogs(data);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'audit_logs');
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (loading) return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-500" /></div>;
-
-  const filteredLogs = logs.filter(log => {
-      let matchesSearch = true;
-      let matchesDate = true;
-
-      if (searchQuery) {
-          const lowerQ = searchQuery.toLowerCase();
-          matchesSearch = log.adminEmail.toLowerCase().includes(lowerQ) || 
-                          log.action.toLowerCase().includes(lowerQ) ||
-                          log.changes.toLowerCase().includes(lowerQ) ||
-                          log.entityId.toLowerCase().includes(lowerQ);
-      }
-
-      if (dateFilter) {
-          // Extraemos YYYY-MM-DD para comparar de la forma local
-          const logDate = new Date(log.timestamp).toISOString().split('T')[0];
-          matchesDate = logDate === dateFilter;
-      }
-
-      return matchesSearch && matchesDate;
-  });
-
-  return (
-    <div className="space-y-4">
-      {/* Filters Panel */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center">
-         <div className="flex-1 relative w-full">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-            <input 
-               type="text"
-               placeholder="Buscar por usuario (ej. correo@...), acción o ref..."
-               value={searchQuery}
-               onChange={e => setSearchQuery(e.target.value)}
-               className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
-            />
-         </div>
-         <div className="flex gap-2 w-full sm:w-auto">
-           <input 
-              type="date"
-              value={dateFilter}
-              onChange={e => setDateFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600 transition-colors flex-1 sm:flex-none"
-              title="Filtrar por fecha"
-           />
-           {(searchQuery || dateFilter) && (
-              <button 
-                onClick={() => { setSearchQuery(''); setDateFilter(''); }}
-                className="px-3 py-2 text-sm text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors font-medium border border-transparent flex items-center justify-center shrink-0"
-                title="Limpiar filtros"
-              >
-                <X className="w-4 h-4" />
-              </button>
-           )}
-         </div>
-      </div>
-
-      <div className="space-y-3">
-        {filteredLogs.map((log) => {
-          let ActionIcon = Activity;
-          let color = 'bg-slate-100 text-slate-600';
-          if (log.action === 'nueva_cuenta') {
-            color = 'bg-emerald-100 text-emerald-600';
-          } else if (log.action === 'abono' || log.action === 'descuento') {
-            color = 'bg-blue-100 text-blue-600';
-          } else if (log.action === 'cambio_telefono') {
-            color = 'bg-orange-100 text-orange-600';
-          } else if (log.action === 'cambio_estado') {
-            color = 'bg-indigo-100 text-indigo-600';
-          } else if (log.action === 'eliminar_cuenta') {
-            color = 'bg-red-100 text-red-600';
-          }
-
-          return (
-            <div key={log.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-slate-300 transition-colors">
-              <div className={`p-2 rounded-lg shrink-0 mt-1 ${color}`}>
-                <ActionIcon className="w-4 h-4" />
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Registrar Nuevo Negocio</h3>
+            <form className="space-y-4" onSubmit={e => { e.preventDefault(); setShowModal(false); }}>
+              <div><label className="block text-sm font-semibold mb-1">Nombre del Negocio</label><input type="text" className="w-full border p-2 rounded" /></div>
+              <div><label className="block text-sm font-semibold mb-1">Propietario</label><input type="text" className="w-full border p-2 rounded" /></div>
+              <div><label className="block text-sm font-semibold mb-1">Email / Usuario</label><input type="email" className="w-full border p-2 rounded" /></div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 font-bold text-slate-500 bg-slate-100 rounded hover:bg-slate-200">Cancelar</button>
+                <button type="submit" className="px-4 py-2 font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700">Guardar</button>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-                  <p className="text-sm font-bold text-slate-800 capitalize truncate">{log.action.replace(/_/g, ' ')}</p>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap shrink-0 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                    <Clock className="w-3.5 h-3.5" />
-                    {new Date(log.timestamp).toLocaleString()}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 mt-1 mb-2">
-                  <span className="bg-slate-100 text-slate-600 text-[10px] font-mono px-2 py-0.5 rounded flex items-center gap-1">
-                    <UserX className="w-3 h-3" /> {log.adminEmail}
-                  </span>
-                  <span className="bg-slate-100 text-slate-600 text-[10px] font-mono px-2 py-0.5 rounded truncate max-w-[150px]">
-                    Ref: {log.entityId}
-                  </span>
-                </div>
-                <div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap font-mono text-xs">
-                  {log.changes}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {filteredLogs.length === 0 && (
-          <div className="text-center p-12 bg-white rounded-2xl border border-dashed border-slate-300">
-            <History className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-            <p className="text-slate-500 text-sm font-medium mb-1">No hay registros encontrados</p>
-            {(searchQuery || dateFilter) ? (
-               <p className="text-slate-400 text-xs">Prueba cambiando o limpiando los filtros actuales.</p>
-            ) : (
-               <p className="text-slate-400 text-xs">Aún no hay actividad auditable registrada en la base de datos.</p>
-            )}
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
+
+const LogsView = () => (
+  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-500">
+    <History className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+    <h3 className="text-lg font-bold text-slate-700">Auditoría Global (Maqueta)</h3>
+    <p className="text-sm mt-1">Aquí se mostrará el registro de actividad de toda la plataforma.</p>
+  </div>
+);
+
+const SettingsView = () => (
+  <div className="max-w-2xl bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+    <h3 className="text-lg font-bold text-slate-800 border-b pb-2">Configuración Maestra de la Plataforma</h3>
+    
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1">OpenAI API Key Global</label>
+        <input type="password" placeholder="sk-..." className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
+        <p className="text-xs text-slate-500 mt-1">Se utilizará para todos los tenants que no tengan una key propia.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1">Costo Base de Suscripción (USD)</label>
+        <input type="number" placeholder="29.99" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
+      </div>
+    </div>
+
+    <div className="pt-4 border-t border-slate-100 flex justify-end">
+      <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-lg text-sm transition-colors">
+        Guardar Ajustes
+      </button>
+    </div>
+  </div>
+);

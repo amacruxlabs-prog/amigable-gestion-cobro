@@ -153,30 +153,35 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
         
         {/* ── Hero Banner ── */}
-        <div className="card relative overflow-hidden">
+        <div className="card relative overflow-hidden" style={{
+          background: 'linear-gradient(135deg, var(--color-brand) 0%, #4338ca 100%)',
+          color: '#ffffff',
+          border: 'none',
+          boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4), 0 8px 10px -6px rgba(99, 102, 241, 0.1)'
+        }}>
           {/* Ambient orbs */}
-          <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-500/6 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/3 w-40 h-40 bg-emerald-500/6 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 w-60 h-60 bg-[#06B6D4]/20 rounded-full blur-2xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="badge badge-info badge-dot">Panel Inteligente</span>
-                <span className="badge badge-success badge-dot">{stats.collectionRate.toFixed(1)}% Efectividad</span>
+                <span className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>Panel Inteligente</span>
+                <span className="badge badge-dot" style={{ background: 'rgba(6, 182, 212, 0.2)', color: '#cffafe', borderColor: 'rgba(6, 182, 212, 0.4)' }}>{stats.collectionRate.toFixed(1)}% Efectividad</span>
               </div>
-              <h2 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="text-2xl font-bold tracking-tight text-white">
                 Panel de Control de Clientes
               </h2>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', maxWidth: '42rem' }}>
-                Administras <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{transactions.length} registros</strong> de cuotas y servicios activos.
+              <p className="text-sm leading-relaxed text-indigo-100" style={{ maxWidth: '42rem' }}>
+                Administras <strong className="text-white font-mono">{transactions.length} registros</strong> de cuotas y servicios activos.
               </p>
             </div>
 
             {/* Quick stats inline */}
             <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end">
               <div className="text-right">
-                <p className="text-mono-xs">Total Recaudado</p>
-                <p className="text-lg font-bold" style={{ color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+                <p className="text-mono-xs text-indigo-200">Total Recaudado</p>
+                <p className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-mono)' }}>
                   {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(stats.paidTotal)}
                 </p>
               </div>

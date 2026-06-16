@@ -184,12 +184,12 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
                       {/* Receivable Bar segment */}
                       <div
                         style={{ height: `${recHeight}%` }}
-                        className="w-full bg-amber-400/95 group-hover:bg-amber-400 transition-colors"
+                        className="w-full bg-[#06B6D4]/90 group-hover:bg-[#06B6D4] transition-colors"
                       />
                       {/* Paid Bar segment */}
                       <div
                         style={{ height: `${paidHeight}%` }}
-                        className="w-full bg-indigo-500/90 group-hover:bg-indigo-650 transition-colors"
+                        className="w-full bg-[#6366F1]/90 group-hover:bg-[#4f46e5] transition-colors"
                       />
                       {/* Empty filler if heights are zero */}
                       {d.total === 0 && (
@@ -212,14 +212,14 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
                         <div className="space-y-1 font-mono">
                           <div className="flex justify-between">
                             <span className="flex items-center gap-1.5 text-slate-400">
-                              <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
+                              <span className="w-2 h-2 rounded-full bg-[#6366F1] inline-block" />
                               Pagado:
                             </span>
                             <span className="font-semibold text-emerald-400">{formatMoney(d.paid)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-1.5 text-slate-400">
-                              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                              <span className="w-2 h-2 rounded-full bg-[#06B6D4] inline-block" />
                               Por cobrar:
                             </span>
                             <span className="font-semibold text-amber-400">{formatMoney(d.receivable)}</span>
@@ -242,11 +242,11 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
         {timelineData.length > 0 && (
           <div className="flex items-center gap-4 justify-center border-t border-slate-50 dark:border-slate-800 pt-3 text-xs">
             <span className="flex items-center gap-1.5 text-slate-655 font-semibold dark:text-slate-400">
-              <span className="w-3 h-3 rounded-md bg-indigo-500 inline-block" />
+              <span className="w-3 h-3 rounded-md bg-[#6366F1] inline-block" />
               Cuentas Pagadas (Efectivo)
             </span>
             <span className="flex items-center gap-1.5 text-slate-655 font-semibold dark:text-slate-400">
-              <span className="w-3 h-3 rounded-md bg-amber-400 inline-block" />
+              <span className="w-3 h-3 rounded-md bg-[#06B6D4] inline-block" />
               Por cobrar (Pendiente)
             </span>
           </div>
@@ -279,7 +279,7 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
                   cx="60"
                   cy="60"
                   r={radius}
-                  className="stroke-amber-400 fill-none"
+                  className="stroke-[#06B6D4] fill-none"
                   strokeWidth={strokeWidth}
                 />
                 {/* Foreground Ring (Paid) */}
@@ -287,7 +287,7 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
                   cx="60"
                   cy="60"
                   r={radius}
-                  className="stroke-indigo-500 fill-none transition-all duration-1000 ease-out"
+                  className="stroke-[#6366F1] fill-none transition-all duration-1000 ease-out"
                   strokeWidth={strokeWidth}
                   strokeDasharray={circumference}
                   strokeDashoffset={paidOffset}
@@ -309,16 +309,16 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
             <div className="w-full space-y-2 mt-6 text-xs font-semibold">
               <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/40 border border-indigo-150/10 hover:bg-indigo-50/70 dark:bg-indigo-950/20 dark:border-indigo-900/30 dark:hover:bg-indigo-950/40 transition-colors">
                 <span className="flex items-center gap-2 text-indigo-900 dark:text-indigo-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#6366F1] inline-block" />
                   Pagadas:
                 </span>
                 <span className="font-mono text-slate-950 dark:text-slate-100 font-bold">
                   {formatMoney(statusStats.paidTotal)} ({statusStats.paidPercent.toFixed(0)}%)
                 </span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-amber-50/40 border border-amber-150/10 hover:bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-900/30 dark:hover:bg-amber-950/40 transition-colors">
-                <span className="flex items-center gap-2 text-amber-950 dark:text-amber-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
+              <div className="flex items-center justify-between p-2 rounded-xl bg-cyan-50/40 border border-cyan-150/10 hover:bg-cyan-50/70 dark:bg-cyan-950/20 dark:border-cyan-900/30 dark:hover:bg-cyan-950/40 transition-colors">
+                <span className="flex items-center gap-2 text-cyan-950 dark:text-cyan-300">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#06B6D4] inline-block" />
                   Por cobrar:
                 </span>
                 <span className="font-mono text-slate-950 dark:text-slate-100 font-bold">
@@ -380,13 +380,13 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
                       {/* Paid segment */}
                       <div 
                         style={{ width: `${(client.total / maxClientVal) * paidDistributionPercent}%` }}
-                        className="bg-indigo-500 h-full rounded-l-full"
+                        className="bg-[#6366F1] h-full rounded-l-full"
                         title={`Pagado: ${formatMoney(client.paid)}`}
                       />
                       {/* Receivable segment */}
                       <div 
                         style={{ width: `${(client.total / maxClientVal) * (100 - paidDistributionPercent)}%` }}
-                        className="bg-amber-400 h-full rounded-r-full"
+                        className="bg-[#06B6D4] h-full rounded-r-full"
                         title={`Pendiente: ${formatMoney(client.receivable)}`}
                       />
                     </div>
@@ -398,7 +398,7 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
                       <span className="text-emerald-600 dark:text-emerald-400 block font-semibold hover:underline cursor-help" title="Monto liquidado">
                         PAG: {formatMoney(client.paid)}
                       </span>
-                      <span className="text-amber-600 dark:text-amber-450 block font-semibold hover:underline cursor-help" title="Por cobrar">
+                      <span className="text-[#06B6D4] dark:text-[#06B6D4] block font-semibold hover:underline cursor-help" title="Por cobrar">
                         PEND: {formatMoney(client.receivable)}
                       </span>
                     </div>

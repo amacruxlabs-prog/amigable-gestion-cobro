@@ -89,8 +89,8 @@ export function PaymentCalendar({ transactions }: PaymentCalendarProps) {
             const dayTxs = txByDate.get(dateStr) || [];
             
             const isSelected = selectedDateStr === dateStr;
-            const hasPending = dayTxs.some(t => t.status === 'Cobrar');
-            const hasPaid = dayTxs.some(t => t.status === 'Pagado');
+            const pendingCount = dayTxs.filter(t => t.status === 'Cobrar').length;
+            const paidCount = dayTxs.filter(t => t.status === 'Pagado').length;
             
             const todayStr = new Date().toISOString().substring(0, 10);
             const isToday = dateStr === todayStr;
@@ -99,7 +99,7 @@ export function PaymentCalendar({ transactions }: PaymentCalendarProps) {
               <button
                 key={`day-${dayNum}`}
                 onClick={() => setSelectedDateStr(dateStr)}
-                className={`aspect-square flex flex-col items-center justify-start py-1.5 md:py-2 border rounded-xl relative transition-all overflow-hidden ${
+                className={`aspect-square flex flex-col items-center justify-start py-1 md:py-1.5 border rounded-xl relative transition-all overflow-hidden ${
                   isSelected 
                     ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 dark:bg-indigo-900/30' 
                     : isToday 
@@ -107,23 +107,28 @@ export function PaymentCalendar({ transactions }: PaymentCalendarProps) {
                     : 'border-slate-100 hover:border-slate-300 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800'
                 }`}
               >
-                <div className={`text-sm md:text-base font-semibold ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                <div className={`text-sm md:text-base font-semibold mb-1 ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}>
                   {dayNum}
                 </div>
                 
-                {/* Dots indicator */}
+                {/* Event Bars */}
                 {dayTxs.length > 0 && (
-                  <div className="flex gap-1 mt-1">
-                    {hasPaid && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-xs" />}
-                    {hasPending && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-xs" />}
+                  <div className="w-full px-1 md:px-1.5 flex flex-col gap-1 mt-auto mb-1">
+                    {paidCount > 0 && (
+                      <div className="h-1.5 md:h-auto md:py-0.5 rounded w-full flex items-center justify-center bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 shadow-xs">
+                        <span className="hidden md:inline text-[9px] font-bold text-emerald-700 dark:text-emerald-400 leading-none truncate">
+                          {paidCount} Pagado
+                        </span>
+                      </div>
+                    )}
+                    {pendingCount > 0 && (
+                      <div className="h-1.5 md:h-auto md:py-0.5 rounded w-full flex items-center justify-center bg-amber-100 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 shadow-xs">
+                        <span className="hidden md:inline text-[9px] font-bold text-amber-700 dark:text-amber-400 leading-none truncate">
+                          {pendingCount} Pend.
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* Number indicator */}
-                {dayTxs.length > 0 && (
-                   <div className="mt-auto hidden md:block text-[9px] font-mono font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 dark:text-slate-500 px-1 py-0.5 rounded">
-                     {dayTxs.length}
-                   </div>
                 )}
               </button>
             );

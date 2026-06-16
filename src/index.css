@@ -21,14 +21,14 @@
   --color-brand-muted:    rgba(99,102,241,0.12);
 
   /* Surface tokens */
-  --surface-base:         #f8fafc;
+  --surface-base:         #f1f5f9; /* Slate 100 for better contrast */
   --surface-card:         #ffffff;
   --surface-elevated:     #ffffff;
   --surface-overlay:      rgba(15,23,42,0.55);
 
   /* Border */
   --border-default:       #e2e8f0;
-  --border-subtle:        #f1f5f9;
+  --border-subtle:        #f8fafc;
   --border-strong:        #cbd5e1;
 
   /* Text */
@@ -38,26 +38,26 @@
   --text-placeholder:     #c0c9d6;
 
   /* Status colours */
-  --color-success:        #10b981;
+  --color-success:        #059669;
   --color-success-light:  #d1fae5;
-  --color-success-text:   #065f46;
-  --color-warning:        #f59e0b;
+  --color-success-text:   #059669;
+  --color-warning:        #d97706;
   --color-warning-light:  #fef3c7;
-  --color-warning-text:   #92400e;
+  --color-warning-text:   #d97706;
   --color-danger:         #ef4444;
   --color-danger-light:   #fee2e2;
   --color-danger-text:    #991b1b;
-  --color-info:           #6366f1;
-  --color-info-light:     #eef2ff;
-  --color-info-text:      #3730a3;
+  --color-info:           #06b6d4; /* Changed to match secondary */
+  --color-info-light:     #cffafe;
+  --color-info-text:      #0891b2;
 
   /* Shadows */
-  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,.04);
-  --shadow-sm:  0 1px 4px 0 rgba(0,0,0,.06), 0 1px 2px -1px rgba(0,0,0,.04);
-  --shadow-md:  0 4px 12px -2px rgba(0,0,0,.08), 0 2px 4px -2px rgba(0,0,0,.04);
-  --shadow-lg:  0 10px 30px -4px rgba(0,0,0,.10), 0 4px 8px -4px rgba(0,0,0,.06);
-  --shadow-glow-brand:  0 0 0 3px rgba(99,102,241,0.18);
-  --shadow-glow-success: 0 0 0 3px rgba(16,185,129,0.18);
+  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,.05);
+  --shadow-sm:  0 1px 4px 0 rgba(0,0,0,.08), 0 1px 2px -1px rgba(0,0,0,.04);
+  --shadow-md:  0 4px 12px -2px rgba(0,0,0,.12), 0 2px 4px -2px rgba(0,0,0,.06);
+  --shadow-lg:  0 10px 30px -4px rgba(0,0,0,.15), 0 4px 8px -4px rgba(0,0,0,.08);
+  --shadow-glow-brand:  0 0 0 3px rgba(99,102,241,0.25);
+  --shadow-glow-success: 0 0 0 3px rgba(16,185,129,0.25);
 
   /* Radius — cuadrado con bordes redondeados suaves */
   --radius-xs:  0.1875rem; /* 3px  */
@@ -91,14 +91,14 @@
   --color-brand-light: rgba(99,102,241,0.1);
   --color-brand-muted: rgba(99,102,241,0.08);
 
-  --color-success-light:  rgba(16,185,129,0.12);
+  --color-success-light:  rgba(5,150,105,0.15);
   --color-success-text:   #34d399;
-  --color-warning-light:  rgba(245,158,11,0.12);
+  --color-warning-light:  rgba(217,119,6,0.15);
   --color-warning-text:   #fbbf24;
   --color-danger-light:   rgba(239,68,68,0.12);
   --color-danger-text:    #f87171;
-  --color-info-light:     rgba(99,102,241,0.1);
-  --color-info-text:      #818cf8;
+  --color-info-light:     rgba(37,99,235,0.15);
+  --color-info-text:      #93c5fd;
 
   --shadow-xs: 0 1px 2px 0 rgba(0,0,0,.3);
   --shadow-sm: 0 1px 4px 0 rgba(0,0,0,.35), 0 1px 2px -1px rgba(0,0,0,.25);
@@ -505,58 +505,35 @@
 
 /* ── badge-success ── */
 @utility badge-success {
-  background:
-    linear-gradient(180deg,
-      rgba(167,243,208,0.9) 0%,
-      rgba(209,250,229,0.75) 100%
-    );
-  color: #065f46;
-  border-color: rgba(16,185,129,0.28);
+  background-color: var(--color-success-light);
+  color: var(--color-success-text);
+  border-color: rgba(5, 150, 105, 0.22);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.65),
-    inset 0 -1px 0 rgba(16,185,129,0.1),
-    0 1px 3px rgba(16,185,129,0.15);
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    0 1px 2px rgba(0,0,0,0.05);
 
   .dark & {
-    background:
-      linear-gradient(180deg,
-        rgba(16,185,129,0.18) 0%,
-        rgba(16,185,129,0.08) 100%
-      );
-    color: #6ee7b7;
-    border-color: rgba(16,185,129,0.25);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.06),
-      0 0 0 0px transparent,
-      0 1px 3px rgba(0,0,0,0.25);
+    background-color: rgba(5, 150, 105, 0.15);
+    color: #34d399;
+    border-color: rgba(5, 150, 105, 0.25);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   }
 }
 
 /* ── badge-warning ── */
 @utility badge-warning {
-  background:
-    linear-gradient(180deg,
-      rgba(253,230,138,0.95) 0%,
-      rgba(254,243,199,0.8) 100%
-    );
-  color: #78350f;
-  border-color: rgba(245,158,11,0.32);
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-text);
+  border-color: rgba(217, 119, 6, 0.22);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.7),
-    inset 0 -1px 0 rgba(245,158,11,0.12),
-    0 1px 3px rgba(245,158,11,0.18);
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    0 1px 2px rgba(0,0,0,0.05);
 
   .dark & {
-    background:
-      linear-gradient(180deg,
-        rgba(245,158,11,0.2) 0%,
-        rgba(245,158,11,0.09) 100%
-      );
-    color: #fcd34d;
-    border-color: rgba(245,158,11,0.28);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      0 1px 3px rgba(0,0,0,0.25);
+    background-color: rgba(217, 119, 6, 0.15);
+    color: #fbbf24;
+    border-color: rgba(217, 119, 6, 0.25);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   }
 }
 
@@ -590,29 +567,18 @@
 
 /* ── badge-info ── */
 @utility badge-info {
-  background:
-    linear-gradient(180deg,
-      rgba(199,210,254,0.9) 0%,
-      rgba(224,231,255,0.75) 100%
-    );
-  color: #3730a3;
-  border-color: rgba(99,102,241,0.28);
+  background-color: var(--color-info-light);
+  color: var(--color-info-text);
+  border-color: rgba(37, 99, 235, 0.22);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.65),
-    inset 0 -1px 0 rgba(99,102,241,0.1),
-    0 1px 3px rgba(99,102,241,0.15);
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    0 1px 2px rgba(0,0,0,0.05);
 
   .dark & {
-    background:
-      linear-gradient(180deg,
-        rgba(99,102,241,0.2) 0%,
-        rgba(99,102,241,0.09) 100%
-      );
-    color: #a5b4fc;
-    border-color: rgba(99,102,241,0.28);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.06),
-      0 1px 3px rgba(0,0,0,0.25);
+    background-color: rgba(37, 99, 235, 0.15);
+    color: #93c5fd;
+    border-color: rgba(37, 99, 235, 0.25);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   }
 }
 

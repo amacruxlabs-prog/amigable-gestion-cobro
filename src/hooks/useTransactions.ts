@@ -2,11 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { Transaction, ColumnMapping, FilterState } from '../types';
 import { DEMO_TRANSACTIONS } from '../data/demoData';
 import { useAuth } from '../contexts/AuthContext';
-import { db, handleFirestoreError, OperationType, collection, query, onSnapshot, setDoc, doc, deleteDoc } from '../lib/firebase';
+import { useUI } from '../contexts/UIContext';
+import { localDb } from '../lib/localDb';
 import { createAuditLog } from '../lib/audit';
 
 export function useTransactions() {
-  const { user, isSuperadmin, isAdmin, isVisor } = useAuth();
+  const { user, isSuperadmin, isAdmin, isVisor, businessId } = useAuth();
+  const { alert, confirm, toast } = useUI();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dbLoading, setDbLoading] = useState(true);
 
@@ -25,45 +27,41 @@ export function useTransactions() {
     startDate: '', endDate: '', status: 'todos', searchTerm: ''
   });
 
-  // Load Transactions from Firestore
+  // Load Transactions from LocalDb
   useEffect(() => {
     if (!user || (!isVisor && !isAdmin && !isSuperadmin)) {
       setTransactions([]);
       setDbLoading(false);
       return;
     }
-    const q = query(collection(db, 'transactions'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: Transaction[] = [];
-      snapshot.forEach(d => {
-        data.push({ id: d.id, ...d.data() } as Transaction);
-      });
-      setTransactions(data);
-      setDbLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'transactions');
+    
+    const unsubscribe = localDb.subscribeCollection('transactions', (data) => {
+      let txs = data as Transaction[];
+      if (!isSuperadmin && businessId) {
+        txs = txs.filter((t: any) => t.businessId === businessId);
+      }
+      setTransactions(txs);
       setDbLoading(false);
     });
+    
     return () => unsubscribe();
-  }, [user, isVisor, isAdmin, isSuperadmin]);
+  }, [user, isVisor, isAdmin, isSuperadmin, businessId]);
 
-  // Load Global Settings from Firestore
+  // Load Global Settings from LocalDb
   useEffect(() => {
     if (!user || (!isVisor && !isAdmin && !isSuperadmin)) {
       return;
     }
-    const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+    const targetBusinessId = businessId || 'demo-business-1';
+    const unsub = localDb.subscribeDoc('settings', targetBusinessId, (data) => {
+      if (data) {
         if (data.availableHeaders) setAvailableHeaders(data.availableHeaders);
         if (data.currentMapping) setCurrentMapping(data.currentMapping);
         if (data.sourceName) setSourceName(data.sourceName);
       }
-    }, (err) => {
-      console.warn("Global settings snapshot error", err);
     });
     return () => unsub();
-  }, [user, isVisor, isAdmin, isSuperadmin]);
+  }, [user, isVisor, isAdmin, isSuperadmin, businessId]);
 
   const handleDataLoadedBySync = async (syncResult: {
     transactions: any[];
@@ -72,7 +70,7 @@ export function useTransactions() {
     sourceName: string;
   }) => {
     if (!isAdmin) {
-      alert("No tienes permisos para sincronizar hojas de cálculo.");
+      toast("No tienes permisos para sincronizar hojas de cálculo.", "error");
       return;
     }
     setAvailableHeaders(syncResult.headers);
@@ -80,22 +78,22 @@ export function useTransactions() {
     setSourceName(syncResult.sourceName);
 
     if (syncResult.transactions.length > 0) {
-      // Sync global settings to firestore
-      await setDoc(doc(db, 'settings', 'global'), {
+      // Sync global settings to localDb
+      const targetBusinessId = businessId || 'demo-business-1';
+      localDb.setDoc('settings', targetBusinessId, {
         availableHeaders: syncResult.headers,
         currentMapping: syncResult.mapping,
         sourceName: syncResult.sourceName
-      }, { merge: true });
+      });
 
-      // Sync all fresh items into Firestore
+      // Sync all fresh items into LocalDb
       for (const t of syncResult.transactions) {
-        try {
-          await setDoc(doc(db, 'transactions', t.id), {
-             ...t, updatedByEmail: user?.email, updatedAt: new Date().toISOString()
-          });
-        } catch (error) {
-          console.error("Error syncing tx", error);
-        }
+        localDb.setDoc('transactions', t.id, {
+          ...t, 
+          businessId: targetBusinessId,
+          updatedByEmail: user?.email, 
+          updatedAt: new Date().toISOString()
+        });
       }
       createAuditLog('nueva_cuenta', 'SYNC', `Se sincronizaron ${syncResult.transactions.length} registros desde GSheets.`);
     }
@@ -103,23 +101,33 @@ export function useTransactions() {
 
   const handleResetToDemo = async () => {
     if (!isAdmin) return;
-    if (window.confirm('¿Seguro de reinstaurar el set de datos inicial?')) {
-      for (const t of DEMO_TRANSACTIONS) {
-        await setDoc(doc(db, 'transactions', t.id), {
-          ...t, updatedByEmail: user?.email, updatedAt: new Date().toISOString()
+    confirm({
+      title: 'Restaurar Set Inicial',
+      message: '¿Seguro de reinstaurar el set de datos inicial?',
+      type: 'warning',
+      onConfirm: async () => {
+        const targetBusinessId = businessId || 'demo-business-1';
+        for (const t of DEMO_TRANSACTIONS) {
+          localDb.setDoc('transactions', t.id, {
+            ...t, 
+            businessId: targetBusinessId,
+            updatedByEmail: user?.email, 
+            updatedAt: new Date().toISOString()
+          });
+        }
+        localDb.setDoc('settings', targetBusinessId, {
+          availableHeaders: ['Nombre de Cliente', 'Monto Total', 'Estado de Pago', 'Fecha', 'Teléfono', 'Cédula', 'Dirección'],
+          currentMapping: {
+            clientNameKey: 'Nombre de Cliente', amountKey: 'Monto Total', statusKey: 'Estado de Pago',
+            dateKey: 'Fecha', phoneKey: 'Teléfono', cedulaKey: 'Cédula', locationKey: 'Dirección'
+          },
+          sourceName: 'Set de Demostración'
         });
-      }
-      await setDoc(doc(db, 'settings', 'global'), {
-        availableHeaders: ['Nombre de Cliente', 'Monto Total', 'Estado de Pago', 'Fecha', 'Teléfono', 'Cédula', 'Dirección'],
-        currentMapping: {
-          clientNameKey: 'Nombre de Cliente', amountKey: 'Monto Total', statusKey: 'Estado de Pago',
-          dateKey: 'Fecha', phoneKey: 'Teléfono', cedulaKey: 'Cédula', locationKey: 'Dirección'
-        },
-        sourceName: 'Set de Demostración'
-      }, { merge: true });
 
-      createAuditLog('nueva_cuenta', 'DEMO', `Se restableció el set de demostración inicial.`);
-    }
+        createAuditLog('nueva_cuenta', 'DEMO', `Se restableció el set de demostración inicial.`);
+        toast('Set de demostración restablecido', 'success');
+      }
+    });
   };
 
   const handleUpdatePhone = async (id: string, newPhone: string) => {
@@ -127,14 +135,15 @@ export function useTransactions() {
     const target = transactions.find(t => t.id === id);
     if (!target) return;
     try {
-      await setDoc(doc(db, 'transactions', id), {
+      localDb.setDoc('transactions', id, {
         ...target,
         phone: newPhone,
         updatedByEmail: user?.email, updatedAt: new Date().toISOString()
       });
       createAuditLog('cambio_telefono', id, `Teléfono actualizado a: ${newPhone}`);
+      toast('Teléfono actualizado', 'success');
     } catch(err) {
-      alert("Error actualizando teléfono.");
+      toast("Error actualizando teléfono.", "error");
     }
   };
 
@@ -160,7 +169,7 @@ export function useTransactions() {
     if (updatedOriginal) updatedData.originalData = updatedOriginal;
     else delete updatedData.originalData;
 
-    await setDoc(doc(db, 'transactions', id), updatedData);
+    localDb.setDoc('transactions', id, updatedData);
     createAuditLog('cambio_estado', id, `Estado cambiado a ${nextStatus}`);
   };
 
@@ -187,19 +196,25 @@ export function useTransactions() {
     if (updatedOriginal) updatedData.originalData = updatedOriginal;
     else delete updatedData.originalData;
 
-    await setDoc(doc(db, 'transactions', id), updatedData);
+    localDb.setDoc('transactions', id, updatedData);
     createAuditLog('abono', id, `Abono de ${paymentAmount} registrado. Total pagado es ahora ${newPaid}`);
   };
 
   const handleDeleteTransaction = async (id: string) => {
     if (!isSuperadmin) {
-      alert("Solo el Superadmin puede eliminar registros por completo.");
+      toast("Solo el Superadmin puede eliminar registros por completo.", "error");
       return;
     }
-    if (window.confirm(`¿Seguro que deseas eliminar la transacción ${id}?`)) {
-      await deleteDoc(doc(db, 'transactions', id));
-      createAuditLog('eliminar_cuenta', id, `Cuenta eliminada por completo.`);
-    }
+    confirm({
+      title: 'Eliminar Transacción',
+      message: `¿Seguro que deseas eliminar la transacción ${id}? Esta acción no se puede deshacer.`,
+      type: 'danger',
+      onConfirm: async () => {
+        localDb.deleteDoc('transactions', id);
+        createAuditLog('eliminar_cuenta', id, `Cuenta eliminada por completo.`);
+        toast('Transacción eliminada', 'success');
+      }
+    });
   };
 
   const handleAddTransaction = async (newTx: Omit<Transaction, 'id'>) => {
@@ -208,9 +223,10 @@ export function useTransactions() {
     const initialPaid = newTx.status === 'Pagado' ? newTx.amount : (newTx.paidAmount || 0);
     const initialPayments = initialPaid > 0 ? [{ amount: initialPaid, date: newTx.date }] : [];
 
-    await setDoc(doc(db, 'transactions', newId), {
+    localDb.setDoc('transactions', newId, {
       id: newId,
       ...newTx,
+      businessId: businessId || 'demo-business-1',
       paidAmount: initialPaid,
       payments: initialPayments,
       originalData: {
@@ -260,7 +276,7 @@ export function useTransactions() {
       else delete updatedData.originalData;
 
       try {
-        await setDoc(doc(db, 'transactions', id), updatedData);
+        localDb.setDoc('transactions', id, updatedData);
         createAuditLog('descuento_accionista', id, `Se aplicó descuento de ${percentage}%. Monto anterior: ${t.amount}, Nuevo monto: ${newAmount}`);
       } catch (e) {
         console.error("Error applying discount to", id, e);

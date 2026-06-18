@@ -81,24 +81,16 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border text-sm font-semibold min-w-[280px] max-w-sm ${
-                t.type === 'success'
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-300'
-                  : t.type === 'error'
-                  ? 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800/60 dark:text-rose-300'
-                  : t.type === 'warning'
-                  ? 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/40 dark:border-amber-800/60 dark:text-amber-300'
-                  : 'bg-indigo-50 border-indigo-200 text-indigo-800 dark:bg-indigo-950/40 dark:border-indigo-800/60 dark:text-indigo-300'
-              }`}
+              className="pointer-events-auto flex items-center gap-3 px-3.5 py-3 rounded-xl shadow-lg border bg-white border-slate-200 text-slate-800 dark:bg-[#0f172a] dark:border-slate-800 dark:text-slate-100 text-sm font-medium min-w-[300px] max-w-sm"
             >
-              {t.type === 'success' && <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />}
-              {t.type === 'error' && <X className="w-5 h-5 text-rose-500 shrink-0" />}
-              {t.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />}
-              {t.type === 'info' && <Info className="w-5 h-5 text-indigo-500 shrink-0" />}
-              <span className="flex-1 leading-snug">{t.message}</span>
+              {t.type === 'success' && <div className="w-8 h-8 rounded-full bg-emerald-100/50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0"><CheckCircle className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" /></div>}
+              {t.type === 'error' && <div className="w-8 h-8 rounded-full bg-red-100/50 dark:bg-red-500/10 flex items-center justify-center shrink-0"><X className="w-4.5 h-4.5 text-red-600 dark:text-red-400" /></div>}
+              {t.type === 'warning' && <div className="w-8 h-8 rounded-full bg-amber-100/50 dark:bg-amber-500/10 flex items-center justify-center shrink-0"><AlertTriangle className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400" /></div>}
+              {t.type === 'info' && <div className="w-8 h-8 rounded-full bg-indigo-100/50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0"><Info className="w-4.5 h-4.5 text-indigo-600 dark:text-indigo-400" /></div>}
+              <span className="flex-1 leading-snug text-[0.8125rem]">{t.message}</span>
               <button
                 onClick={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
-                className="opacity-50 hover:opacity-100 transition-opacity"
+                className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -148,7 +140,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   onClick={() => setConfirmDialog(null)}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                  className="btn btn-secondary"
                 >
                   {confirmDialog.cancelText || 'Cancelar'}
                 </button>
@@ -157,10 +149,10 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                     confirmDialog.onConfirm();
                     setConfirmDialog(null);
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold text-white shadow-sm transition flex items-center gap-1.5 ${
-                    confirmDialog.type === 'danger' ? 'bg-red-600 hover:bg-red-700' :
-                    confirmDialog.type === 'warning' ? 'bg-amber-600 hover:bg-amber-700' :
-                    'bg-[#6366F1] hover:bg-[#4f46e5]'
+                  className={`btn ${
+                    confirmDialog.type === 'danger' ? 'btn-danger' :
+                    confirmDialog.type === 'warning' ? 'btn-warning' :
+                    'btn-primary'
                   }`}
                 >
                   <Check className="w-4 h-4" />
@@ -217,7 +209,12 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                     alertDialog.onClose?.();
                     setAlertDialog(null);
                   }}
-                  className="w-full px-4 py-2 rounded-lg text-sm font-bold text-white bg-[#6366F1] hover:bg-[#4f46e5] shadow-sm transition"
+                  className={`w-full btn ${
+                    alertDialog.type === 'danger' ? 'btn-danger' :
+                    alertDialog.type === 'warning' ? 'btn-warning' :
+                    alertDialog.type === 'success' ? 'btn-success' :
+                    'btn-primary'
+                  }`}
                 >
                   {alertDialog.buttonText || 'Entendido'}
                 </button>

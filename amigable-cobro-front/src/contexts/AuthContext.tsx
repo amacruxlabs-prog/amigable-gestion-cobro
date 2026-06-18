@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { localAuth, localDb, User } from '../lib/localDb';
 
-export type Role = 'SUPERADMIN' | 'TENANT_ADMIN' | null;
+export type Role = 'SUPERADMIN' | 'TENANT_ADMIN' | 'VISOR' | null;
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +12,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isSuperadmin: boolean;
   isTenantAdmin: boolean;
+  isAdmin: boolean;
+  isVisor: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,6 +25,8 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   isSuperadmin: false,
   isTenantAdmin: false,
+  isAdmin: false,
+  isVisor: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -79,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isSuperadmin = role === 'SUPERADMIN' || user?.email === 'amacruxlabs@gmail.com';
   const isTenantAdmin = role === 'TENANT_ADMIN';
+  const isAdmin = isSuperadmin || isTenantAdmin;
+  const isVisor = role === 'VISOR';
 
   const handleSignIn = async (email?: string) => {
     localAuth.signIn(email || 'amacruxlabs@gmail.com');
@@ -97,7 +103,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signIn: handleSignIn,
       signOut: handleSignOut,
       isSuperadmin,
-      isTenantAdmin
+      isTenantAdmin,
+      isAdmin,
+      isVisor
     }}>
       {children}
     </AuthContext.Provider>

@@ -33,7 +33,7 @@ services:
     networks:
       - amigable-network
     ports:
-      - "3306:3306"
+      - "3312:3306"
 
 networks:
   amigable-network:

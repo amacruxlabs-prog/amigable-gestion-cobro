@@ -4,19 +4,25 @@ import { Charts } from './components/Charts';
 import { SheetConnector } from './components/SheetConnector';
 import { TransactionTable } from './components/TransactionTable';
 import { PaymentCalendar } from './components/PaymentCalendar';
-import { Activity, RotateCcw, ShieldAlert, Clock, Sparkles, MessageSquare, LogOut, Shield, Moon, Sun } from 'lucide-react';
 import { AiConfigDrawer } from './components/AiConfigDrawer';
 import { WhatsappBroadcastModal } from './components/WhatsappBroadcastModal';
 import { DiscountModal } from './components/admin/DiscountModal';
-import { useAuth } from './contexts/AuthContext';
-import { LoginScreen } from './components/auth/LoginScreen';
 import { SuperadminPanel } from './components/admin/SuperadminPanel';
-import { useTheme } from './hooks/useTheme';
+import { LoginScreen } from './components/auth/LoginScreen';
+import { AppLayout, NoPemissionsScreen } from './components/layout/AppLayout';
+import { TeamPanel } from './components/team/TeamPanel';
+import { useAuth } from './contexts/AuthContext';
 import { useTransactions } from './hooks/useTransactions';
+import {
+  Activity,
+  RotateCcw,
+  DollarSign,
+  Settings,
+  Link2,
+} from 'lucide-react';
 
 export default function App() {
-  const { user, loading: authLoading, signOut, isSuperadmin, isAdmin, isVisor } = useAuth();
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { user, loading: authLoading, isSuperadmin, isAdmin, isVisor } = useAuth();
   const {
     transactions,
     availableHeaders,
@@ -45,241 +51,404 @@ export default function App() {
   useEffect(() => {
     const timer = setInterval(() => {
       const d = new Date();
-      setCurrentTime(d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setCurrentTime(
+        d.toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+      );
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 dark:text-slate-400">Cargando identidad segura...</div>;
-  if (!user) return <LoginScreen />;
-  if (user && !isVisor && !isAdmin && !isSuperadmin) {
+  // ── Auth guards ──
+  if (authLoading)
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 gap-4 text-center p-4">
-        <ShieldAlert className="w-12 h-12 text-red-500" />
-        <h2 className="text-xl font-bold dark:text-slate-200">Sin Permisos</h2>
-        <p className="text-slate-500 dark:text-slate-400">Tu cuenta ({user.email}) ha iniciado sesión pero aún no tienes un rol asignado en la plataforma.</p>
-        <button onClick={signOut} className="mt-4 px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 rounded font-bold text-sm">Cerrar Sesión</button>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--surface-base)', color: 'var(--text-muted)' }}
+      >
+        Cargando identidad segura...
       </div>
     );
-  }
+  if (!user) return <LoginScreen />;
+  if (!isVisor && !isAdmin && !isSuperadmin) return <NoPemissionsScreen />;
 
   return (
-    <div className="min-h-screen pb-16" style={{ background: 'var(--surface-base)', color: 'var(--text-primary)' }}>
-      
-      {/* ── Navigation Bar ── */}
-      <header style={{
-        background: 'var(--surface-card)',
-        borderBottom: '1px solid var(--border-default)',
-        boxShadow: 'var(--shadow-xs)',
-      }} className="sticky top-0 z-50">
-        {/* Top brand stripe */}
-        <div className="h-0.5 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 flex items-center justify-center text-white flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #6366f1, #7c3aed)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
-              }}
-            >
-              <Sparkles className="w-4.5 h-4.5" />
-            </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                Mouna
-              </h1>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`badge ${
-                    isSuperadmin ? 'badge-purple' : isAdmin ? 'badge-info' : 'badge-slate'
-                  }`}
+    <>
+      <AppLayout
+        currentTime={currentTime}
+        onOpenAi={() => setIsAiOpen(true)}
+        onOpenWhatsapp={() => setIsWhatsappOpen(true)}
+        onOpenSuperadmin={() => setIsSuperadminOpen(true)}
+      >
+        {(activeView) => (
+          <div className="h-full">
+            {/* ══════════════════════════════════════
+                VISTA: DASHBOARD
+                KPIs + Gráficos
+            ══════════════════════════════════════ */}
+            {activeView === 'dashboard' && (
+              <div className="p-6 space-y-6">
+                {/* Hero Banner */}
+                <div
+                  className="card relative overflow-hidden"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, var(--color-brand) 0%, #4338ca 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    boxShadow:
+                      '0 10px 25px -5px rgba(99,102,241,0.4), 0 8px 10px -6px rgba(99,102,241,0.1)',
+                  }}
                 >
-                  {isSuperadmin ? 'Superadmin' : isAdmin ? 'Admin' : 'Visor'}
-                </span>
-                <span className="text-mono-xs hidden sm:block">· {user.email}</span>
-              </div>
-            </div>
-          </div>
+                  <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute bottom-0 left-1/4 w-60 h-60 bg-[#06B6D4]/20 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Actions */}
-          <div className="flex items-center flex-wrap gap-2">
-            {currentTime && (
-              <div className="btn btn-secondary gap-1.5 font-mono" style={{ letterSpacing: '0.02em' }}>
-                <Clock className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-                <span style={{ color: 'var(--text-secondary)' }}>{currentTime}</span>
+                  <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className="badge"
+                          style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            color: 'white',
+                            borderColor: 'rgba(255,255,255,0.3)',
+                          }}
+                        >
+                          Panel Inteligente
+                        </span>
+                        <span
+                          className="badge badge-dot"
+                          style={{
+                            background: 'rgba(6,182,212,0.2)',
+                            color: '#cffafe',
+                            borderColor: 'rgba(6,182,212,0.4)',
+                          }}
+                        >
+                          {stats.collectionRate.toFixed(1)}% Efectividad
+                        </span>
+                      </div>
+                      <h2 className="text-2xl font-bold tracking-tight text-white">
+                        Panel de Control de Clientes
+                      </h2>
+                      <p className="text-sm leading-relaxed text-indigo-100" style={{ maxWidth: '42rem' }}>
+                        Administras{' '}
+                        <strong className="text-white font-mono">
+                          {transactions.length} registros
+                        </strong>{' '}
+                        de cuotas y servicios activos.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end">
+                      <div className="text-right">
+                        <p className="text-mono-xs text-indigo-200">Total Recaudado</p>
+                        <p
+                          className="text-lg font-bold text-white"
+                          style={{ fontFamily: 'var(--font-mono)' }}
+                        >
+                          {new Intl.NumberFormat('es-CO', {
+                            style: 'currency',
+                            currency: 'COP',
+                            maximumFractionDigits: 0,
+                          }).format(stats.paidTotal)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPI Metrics */}
+                <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                  <MetricCard
+                    id="kpi-total-sales"
+                    title="Total Emitido"
+                    value={stats.salesTotal}
+                    type="total"
+                    count={stats.salesCount}
+                    subtext="Monto total en cuotas"
+                  />
+                  <MetricCard
+                    id="kpi-paid-accounts"
+                    title="Cuentas Pagadas"
+                    value={stats.paidTotal}
+                    type="paid"
+                    count={stats.paidCount}
+                    subtext={`${((stats.paidTotal / (stats.salesTotal || 1)) * 100).toFixed(0)}% del ingreso total`}
+                  />
+                  <MetricCard
+                    id="kpi-debt-accounts"
+                    title="Cuentas por Cobrar"
+                    value={stats.receivableTotal}
+                    type="receivable"
+                    count={stats.receivableCount}
+                    subtext={`${((stats.receivableTotal / (stats.salesTotal || 1)) * 100).toFixed(0)}% del ingreso total`}
+                  />
+                  <MetricCard
+                    id="kpi-efficiency-rate"
+                    title="Efectividad de Cobro"
+                    value={stats.collectionRate}
+                    type="percentage"
+                    subtext="Porcentaje recaudado vs. facturado"
+                  />
+                </section>
+
+                {/* Charts */}
+                <section>
+                  <Charts transactions={filteredTxsForKPIs} />
+                </section>
               </div>
             )}
 
-            {isSuperadmin && (
-              <button onClick={() => setIsSuperadminOpen(true)} className="btn" style={{
-                background: 'linear-gradient(135deg, #f3e8ff, #ede9fe)',
-                color: '#6b21a8',
-                borderColor: 'rgba(139,92,246,0.25)',
-              }}>
-                <Shield className="w-3.5 h-3.5" />
-                <span>Superadmin</span>
-              </button>
+            {/* ══════════════════════════════════════
+                VISTA: CALENDARIO
+            ══════════════════════════════════════ */}
+            {activeView === 'calendar' && (
+              <div className="p-6">
+                {/* Section header */}
+                <div className="mb-6">
+                  <h2
+                    className="text-xl font-bold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Calendario de Pagos
+                  </h2>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                    Visualización de proyecciones y vencimientos en el tiempo.
+                  </p>
+                </div>
+                <PaymentCalendar transactions={filteredTxsForKPIs} />
+              </div>
             )}
 
-            <button onClick={() => setIsAiOpen(true)} className="btn btn-primary">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>Asistente IA</span>
-            </button>
+            {/* ══════════════════════════════════════
+                VISTA: CUENTAS Y COBROS
+            ══════════════════════════════════════ */}
+            {activeView === 'accounts' && (
+              <div className="p-6 space-y-4">
+                {/* Active filters alert */}
+                {(filters.startDate ||
+                  filters.endDate ||
+                  filters.searchTerm ||
+                  filters.status !== 'todos') && (
+                  <div className="alert alert-info animate-fade-in">
+                    <Activity className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <span className="font-semibold">Filtros activos: </span>
+                      {filters.searchTerm && (
+                        <span>Búsqueda «{filters.searchTerm}»</span>
+                      )}
+                      {filters.status !== 'todos' && (
+                        <span> · Estado: {filters.status}</span>
+                      )}
+                      {filters.startDate && (
+                        <span> · Desde: {filters.startDate}</span>
+                      )}
+                      {filters.endDate && (
+                        <span> · Hasta: {filters.endDate}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() =>
+                        setFilters({
+                          startDate: '',
+                          endDate: '',
+                          status: 'todos',
+                          searchTerm: '',
+                        })
+                      }
+                      className="btn btn-sm"
+                      style={{
+                        background: 'rgba(99,102,241,0.12)',
+                        color: 'var(--color-info-text)',
+                        borderColor: 'rgba(99,102,241,0.2)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Limpiar filtros
+                    </button>
+                  </div>
+                )}
 
-            {isAdmin && (
-              <button onClick={() => setIsWhatsappOpen(true)} className="btn btn-success">
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
-              </button>
+                <TransactionTable
+                  transactions={transactions}
+                  onToggleStatus={handleToggleStatus}
+                  onRegisterPayment={handleRegisterPayment}
+                  onDeleteTransaction={handleDeleteTransaction}
+                  onAddTransaction={handleAddTransaction}
+                  filter={filters}
+                  onFilterChange={setFilters}
+                  isSuperadmin={isSuperadmin}
+                  onShowDiscountModal={() => setIsDiscountModalOpen(true)}
+                />
+              </div>
             )}
 
-            <button onClick={toggleTheme} className="btn btn-secondary btn-icon" title="Cambiar tema">
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+            {/* ══════════════════════════════════════
+                VISTA: EQUIPO Y GESTORES
+            ══════════════════════════════════════ */}
+            {activeView === 'team' && (
+              <TeamPanel />
+            )}
 
-            <button onClick={signOut} className="btn btn-secondary">
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Salir</span>
-            </button>
-          </div>
-        </div>
-      </header>
+            {/* ══════════════════════════════════════
+                VISTA: SINCRONIZACIÓN
+            ══════════════════════════════════════ */}
+            {activeView === 'sync' && (
+              <div className="p-6 space-y-6">
+                {/* Section header */}
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div
+                      className="w-8 h-8 flex items-center justify-center rounded-lg"
+                      style={{ background: 'var(--color-brand-light)' }}
+                    >
+                      <Link2
+                        className="w-4 h-4"
+                        style={{ color: 'var(--color-brand)' }}
+                      />
+                    </div>
+                    <h2
+                      className="text-xl font-bold"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      Sincronización de Datos
+                    </h2>
+                  </div>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                    Conecta tus hojas de Google Sheets o carga archivos CSV para importar registros.
+                  </p>
+                </div>
 
-      {/* Main Body */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
-        
-        {/* ── Hero Banner ── */}
-        <div className="card relative overflow-hidden" style={{
-          background: 'linear-gradient(135deg, var(--color-brand) 0%, #4338ca 100%)',
-          color: '#ffffff',
-          border: 'none',
-          boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4), 0 8px 10px -6px rgba(99, 102, 241, 0.1)'
-        }}>
-          {/* Ambient orbs */}
-          <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-60 h-60 bg-[#06B6D4]/20 rounded-full blur-2xl pointer-events-none" />
+                <div className="max-w-2xl space-y-5">
+                  <SheetConnector
+                    onDataLoaded={handleDataLoadedBySync}
+                    currentMapping={currentMapping}
+                    availableHeaders={availableHeaders}
+                    activeSourceName={sourceName}
+                  />
 
-          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>Panel Inteligente</span>
-                <span className="badge badge-dot" style={{ background: 'rgba(6, 182, 212, 0.2)', color: '#cffafe', borderColor: 'rgba(6, 182, 212, 0.4)' }}>{stats.collectionRate.toFixed(1)}% Efectividad</span>
+                  {/* Demo reset — solo admins */}
+                  {isAdmin && (
+                    <div
+                      className="card"
+                      style={{
+                        borderColor: 'rgba(239,68,68,0.15)',
+                        background: 'var(--surface-card)',
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p
+                            className="text-sm font-bold mb-1"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            Restauración de Datos Demo
+                          </p>
+                          <p
+                            className="text-xs leading-relaxed"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            Reemplaza los datos actuales del servidor con el conjunto de datos de demostración. Esta acción es irreversible.
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleResetToDemo}
+                          className="btn btn-danger flex-shrink-0"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Restaurar Demo</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <h2 className="text-2xl font-bold tracking-tight text-white">
-                Panel de Control de Clientes
-              </h2>
-              <p className="text-sm leading-relaxed text-indigo-100" style={{ maxWidth: '42rem' }}>
-                Administras <strong className="text-white font-mono">{transactions.length} registros</strong> de cuotas y servicios activos.
-              </p>
-            </div>
+            )}
 
-            {/* Quick stats inline */}
-            <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end">
-              <div className="text-right">
-                <p className="text-mono-xs text-indigo-200">Total Recaudado</p>
-                <p className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-mono)' }}>
-                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(stats.paidTotal)}
-                </p>
+            {/* ══════════════════════════════════════
+                VISTA: CONFIGURACIÓN
+            ══════════════════════════════════════ */}
+            {activeView === 'settings' && (
+              <div className="p-6 space-y-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div
+                      className="w-8 h-8 flex items-center justify-center rounded-lg"
+                      style={{ background: 'var(--color-brand-light)' }}
+                    >
+                      <Settings
+                        className="w-4 h-4"
+                        style={{ color: 'var(--color-brand)' }}
+                      />
+                    </div>
+                    <h2
+                      className="text-xl font-bold"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      Configuración del Negocio
+                    </h2>
+                  </div>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                    Ajustes y preferencias del negocio actual.
+                  </p>
+                </div>
+
+                <div
+                  className="card max-w-2xl flex flex-col items-center justify-center py-16 text-center"
+                  style={{ borderStyle: 'dashed' }}
+                >
+                  <div
+                    className="w-14 h-14 flex items-center justify-center rounded-xl mb-4"
+                    style={{ background: 'var(--color-brand-light)' }}
+                  >
+                    <DollarSign
+                      className="w-6 h-6"
+                      style={{ color: 'var(--color-brand)' }}
+                    />
+                  </div>
+                  <h3
+                    className="text-base font-bold mb-2"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Configuración disponible próximamente
+                  </h3>
+                  <p
+                    className="text-sm max-w-xs leading-relaxed"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Aquí podrás ajustar los parámetros del negocio una vez conectado con el backend.
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Active Filters Alert ── */}
-        {(filters.startDate || filters.endDate || filters.searchTerm || filters.status !== 'todos') && (
-          <div className="alert alert-info animate-fade-in">
-            <Activity className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <span className="font-semibold">Filtros activos: </span>
-              {filters.searchTerm && <span>Búsqueda «{filters.searchTerm}»</span>}
-              {filters.status !== 'todos' && <span> · Estado: {filters.status}</span>}
-              {filters.startDate && <span> · Desde: {filters.startDate}</span>}
-              {filters.endDate && <span> · Hasta: {filters.endDate}</span>}
-            </div>
-            <button
-              onClick={() => setFilters({ startDate: '', endDate: '', status: 'todos', searchTerm: '' })}
-              className="btn btn-sm" style={{
-                background: 'rgba(99,102,241,0.12)',
-                color: 'var(--color-info-text)',
-                borderColor: 'rgba(99,102,241,0.2)',
-                flexShrink: 0,
-              }}
-            >
-              Limpiar filtros
-            </button>
+            )}
           </div>
         )}
+      </AppLayout>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <MetricCard id="kpi-total-sales" title="Total Emitido" value={stats.salesTotal} type="total" count={stats.salesCount} subtext="Monto total en cuotas" />
-          <MetricCard id="kpi-paid-accounts" title="Cuentas Pagadas" value={stats.paidTotal} type="paid" count={stats.paidCount} subtext={`${((stats.paidTotal / (stats.salesTotal || 1)) * 100).toFixed(0)}% del ingreso total`} />
-          <MetricCard id="kpi-debt-accounts" title="Cuentas por Cobrar" value={stats.receivableTotal} type="receivable" count={stats.receivableCount} subtext={`${((stats.receivableTotal / (stats.salesTotal || 1)) * 100).toFixed(0)}% del ingreso total`} />
-          <MetricCard id="kpi-efficiency-rate" title="Efectividad de Cobro" value={stats.collectionRate} type="percentage" subtext="Porcentaje recaudado vs. facturado" />
-        </section>
-
-        <section className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          <div className="xl:col-span-8 space-y-6">
-            <Charts transactions={filteredTxsForKPIs} />
-          </div>
-          <div className="xl:col-span-4 space-y-4">
-            <SheetConnector
-              onDataLoaded={handleDataLoadedBySync}
-              currentMapping={currentMapping}
-              availableHeaders={availableHeaders}
-              activeSourceName={sourceName}
-            />
-            {isAdmin && (
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center space-y-3 dark:bg-slate-900 dark:border-slate-800">
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mb-2">Restauración y Demo</p>
-                <button
-                  onClick={handleResetToDemo}
-                  className="w-full py-2 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 text-xs font-semibold rounded-lg cursor-pointer transition-colors flex items-center justify-center gap-1.5 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Restaurar Datos Fake (Demo) al Servidor</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="w-full">
-          <PaymentCalendar transactions={filteredTxsForKPIs} />
-        </section>
-
-        <section className="w-full">
-          <TransactionTable
-            transactions={transactions}
-            onToggleStatus={handleToggleStatus}
-            onRegisterPayment={handleRegisterPayment}
-            onDeleteTransaction={handleDeleteTransaction}
-            onAddTransaction={handleAddTransaction}
-            filter={filters}
-            onFilterChange={setFilters}
-            isSuperadmin={isSuperadmin}
-            onShowDiscountModal={() => setIsDiscountModalOpen(true)}
-          />
-        </section>
-
-      </main>
-
-      <footer className="mt-20 border-t border-slate-200 dark:border-slate-800 py-8 text-center text-xs text-slate-400 max-w-7xl mx-auto px-4">
-        <p className="font-semibold text-slate-500 dark:text-slate-400">Mouna • Plataforma de Gestión Segura de Cuotas</p>
-        <p className="mt-1 font-mono text-[10px] text-slate-400 dark:text-slate-550">
-          © {new Date().getFullYear()} • Modificaciones auditadas en tiempo real.
-        </p>
-      </footer>
-
-      <AiConfigDrawer isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} transactions={transactions} />
-      <WhatsappBroadcastModal isOpen={isWhatsappOpen} onClose={() => setIsWhatsappOpen(false)} transactions={transactions} onUpdatePhone={handleUpdatePhone} />
-      <DiscountModal isOpen={isDiscountModalOpen} onClose={() => setIsDiscountModalOpen(false)} transactions={transactions} onApplyDiscount={handleApplyDiscount} />
+      {/* ── Global Modals (always mounted, portal-style) ── */}
+      <AiConfigDrawer
+        isOpen={isAiOpen}
+        onClose={() => setIsAiOpen(false)}
+        transactions={transactions}
+      />
+      <WhatsappBroadcastModal
+        isOpen={isWhatsappOpen}
+        onClose={() => setIsWhatsappOpen(false)}
+        transactions={transactions}
+        onUpdatePhone={handleUpdatePhone}
+      />
+      <DiscountModal
+        isOpen={isDiscountModalOpen}
+        onClose={() => setIsDiscountModalOpen(false)}
+        transactions={transactions}
+        onApplyDiscount={handleApplyDiscount}
+      />
       {isSuperadmin && isSuperadminOpen && (
         <SuperadminPanel onClose={() => setIsSuperadminOpen(false)} />
       )}
-    </div>
+    </>
   );
 }

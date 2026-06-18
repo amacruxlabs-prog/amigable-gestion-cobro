@@ -100,7 +100,7 @@ Es la interfaz actual, pero su consumo de datos estará restringido por un ident
 
 ---
 
-## 5. Arquitectura de Datos (Firestore) Requerida
+## 5. Arquitectura de Datos Requerida
 
 Para habilitar el esquema Multi-negocio, la base de datos debe ser reestructurada:
 
@@ -122,7 +122,7 @@ Para toda la nueva interfaz del Super Admin y el Login, se debe respetar la refa
 ---
 
 ## 7. Fases de Implementación Sugeridas
-1.  **Fase 1: Backend y Arquitectura Auth.** Configurar Firebase Authentication, reestructurar Firestore (reglas de seguridad para `businessId`), y adaptar el AuthContext.
+1.  **Fase 1: Backend y Arquitectura Auth.** Configurar el sistema de Autenticación, reestructurar la Base de Datos (reglas de seguridad para `businessId`), y adaptar el AuthContext.
 2.  **Fase 2: Diseño de Login.** Crear el componente `LoginScreen` con los lineamientos de UI (gradientes).
 3.  **Fase 3: Panel Super Admin.** Desarrollar el Layout con Sidebar y el CRUD de negocios.
 4.  **Fase 4: Adaptación del Tenant.** Modificar los hooks actuales (`useTransactions`, `WhatsappBroadcastModal`, etc.) para que envíen y lean el `businessId` inyectado por el usuario logueado, garantizando el aislamiento de datos.

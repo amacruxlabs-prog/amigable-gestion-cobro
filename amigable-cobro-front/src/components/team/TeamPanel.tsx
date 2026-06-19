@@ -195,13 +195,7 @@ export const TeamPanel: React.FC = () => {
         </div>
       </div>
 
-      <div
-        className="card"
-        style={{
-          background: 'linear-gradient(135deg, rgba(99,102,241,0.04) 0%, rgba(6,182,212,0.03) 100%)',
-          borderColor: 'rgba(99,102,241,0.18)',
-        }}
-      >
+      <div className="card">
         <div className="flex items-center gap-2 mb-4">
           <UserPlus className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
           <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>

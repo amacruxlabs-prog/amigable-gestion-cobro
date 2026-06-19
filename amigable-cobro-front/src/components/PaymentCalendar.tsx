@@ -1393,11 +1393,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                     setNewEvent(prev => ({ ...prev, date: selectedDateStr }));
                     setIsAddEventOpen(true);
                   }}
-                  className={`mt-4 w-full font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm ${
-                    selectedDateStr && selectedDateStr < getVenezuelaTodayStr()
-                      ? 'bg-slate-105 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700 shadow-none'
-                      : 'bg-indigo-650 hover:bg-indigo-700 text-white cursor-pointer'
-                  }`}
+                  className="mt-4 w-full btn btn-primary flex items-center justify-center gap-1.5"
                   title={selectedDateStr && selectedDateStr < getVenezuelaTodayStr() ? "No se pueden programar actividades en fechas pasadas" : "Programar actividad para este día"}
                 >
                   <Plus className="w-4 h-4" /> Programar Actividad
@@ -1512,13 +1508,13 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                 <button
                   type="button"
                   onClick={() => setIsAddEventOpen(false)}
-                  className="px-4 py-2 bg-slate-105 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 font-bold rounded-xl cursor-pointer"
+                  className="btn btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl cursor-pointer shadow-xs"
+                  className="btn btn-primary"
                 >
                   Programar
                 </button>
@@ -1572,13 +1568,13 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                 <button
                   type="button"
                   onClick={() => setIsRescheduleOpen(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 font-bold rounded-xl cursor-pointer"
+                  className="btn btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl cursor-pointer shadow-xs"
+                  className="btn btn-primary"
                 >
                   Confirmar
                 </button>
@@ -1630,13 +1626,13 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                 <button
                   type="button"
                   onClick={() => setIsRegisterPaymentOpen(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 font-bold rounded-xl cursor-pointer"
+                  className="btn btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-xs"
+                  className="btn btn-success"
                 >
                   Abonar Pago
                 </button>

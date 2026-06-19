@@ -29,7 +29,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenSuperadmin,
   currentTime,
 }) => {
-  const { user, signOut, isSuperadmin, isAdmin } = useAuth();
+  const { user, businessId, signOut, isSuperadmin, isAdmin } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   
   const navigate = useNavigate();
@@ -161,7 +161,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               )}
 
               {/* Superadmin */}
-              {isSuperadmin && (
+              {isSuperadmin && !businessId && (
                 <button
                   onClick={onOpenSuperadmin}
                   className="btn"

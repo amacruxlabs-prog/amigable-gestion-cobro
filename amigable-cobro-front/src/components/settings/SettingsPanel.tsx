@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Settings, Save, ArrowUp, ArrowDown, ShieldCheck, Power, Bot, CreditCard, Bell } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useUI } from '../../contexts/UIContext';
@@ -23,6 +23,9 @@ export const SettingsPanel = ({
   const [saving, setSaving] = useState(false);
   const [models, setModels] = useState<AiModel[]>([]);
   const [activeTab, setActiveTab] = useState<'ai' | 'billing' | 'notifications'>('ai');
+
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -49,17 +52,18 @@ export const SettingsPanel = ({
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (modelsToSave?: AiModel[]) => {
     try {
       setSaving(true);
+      const currentModels = modelsToSave || models;
       const payload = apiPath === '/superadmin/settings' 
-        ? { ai_models: models }
-        : { settings: { ai_models: models } };
+        ? { ai_models: currentModels }
+        : { settings: { ai_models: currentModels } };
 
       await api.put(apiPath, payload);
       toast('Configuración de IA guardada exitosamente', 'success');
       // Refetch to get masked keys back
-      await fetchSettings();
+      if (!modelsToSave) await fetchSettings();
     } catch (error: any) {
       toast(error.response?.data?.message || 'Error al guardar configuración', 'error');
     } finally {
@@ -176,35 +180,48 @@ export const SettingsPanel = ({
             
             <div className="divide-y divide-slate-100">
               {models.map((model, index) => (
-                <div key={model.id} className={`p-5 transition-colors ${model.enabled ? 'bg-white' : 'bg-slate-50/50'}`}>
+                <div 
+                  key={model.id} 
+                  draggable
+                  onDragStart={(e) => {
+                    dragItem.current = index;
+                    e.currentTarget.style.opacity = '0.5';
+                    // We need to set some data for Firefox to allow dragging
+                    e.dataTransfer.setData('text/plain', '');
+                  }}
+                  onDragEnter={(e) => {
+                    dragOverItem.current = index;
+                    if (dragItem.current !== null && dragItem.current !== dragOverItem.current) {
+                      const newModels = [...models];
+                      const [movedItem] = newModels.splice(dragItem.current, 1);
+                      newModels.splice(dragOverItem.current, 0, movedItem);
+                      
+                      dragItem.current = dragOverItem.current;
+                      setModels(newModels);
+                    }
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    const newModels = [...models];
+                    newModels.forEach((m, i) => m.priority = i + 1);
+                    setModels(newModels);
+                    handleSave(newModels);
+                    dragItem.current = null;
+                    dragOverItem.current = null;
+                  }}
+                  className={`p-5 transition-all cursor-grab active:cursor-grabbing ${model.enabled ? 'bg-white' : 'bg-slate-50/50'} relative`}
+                >
                   <div className="flex items-start gap-4">
-                    <div className="flex flex-col items-center gap-1 pt-1 w-8">
-                      <button 
-                        onClick={() => handleMove(index, 'up')}
-                        disabled={index === 0}
-                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded disabled:opacity-30 disabled:hover:bg-transparent"
-                      >
-                        <ArrowUp className="w-4 h-4" />
-                      </button>
-                      <span className="text-center text-[10px] font-bold text-slate-400">{index + 1}</span>
-                      <button 
-                        onClick={() => handleMove(index, 'down')}
-                        disabled={index === models.length - 1}
-                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded disabled:opacity-30 disabled:hover:bg-transparent"
-                      >
-                        <ArrowDown className="w-4 h-4" />
-                      </button>
-                    </div>
-
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-lg">
+                          <div className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-lg pointer-events-none">
                             {getLogo(model.id)}
                           </div>
-                          <div>
+                          <div className="pointer-events-none">
                             <h4 className={`font-bold ${model.enabled ? 'text-slate-800' : 'text-slate-500'}`}>{model.name}</h4>
-                            <p className="text-[11px] text-slate-500">Motor de procesamiento NLP</p>
+                            <p className="text-[11px] text-slate-500">Motor de procesamiento NLP (Arrastra para reordenar)</p>
                           </div>
                         </div>
                         

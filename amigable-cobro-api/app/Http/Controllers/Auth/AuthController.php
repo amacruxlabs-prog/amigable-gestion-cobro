@@ -46,7 +46,11 @@ class AuthController extends Controller
      */
     public function refresh()
     {
-        return $this->respondWithToken(auth('api')->refresh());
+        try {
+            return $this->respondWithToken(auth('api')->refresh());
+        } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException $e) {
+            return $this->errorResponse('No se pudo refrescar el token: ' . $e->getMessage(), 'UNAUTHENTICATED', null, 401);
+        }
     }
 
     /**

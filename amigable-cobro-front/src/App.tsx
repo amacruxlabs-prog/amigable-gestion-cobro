@@ -294,7 +294,11 @@ export default function App() {
                     Visualización de proyecciones y vencimientos en el tiempo.
                   </p>
                 </div>
-                <PaymentCalendar transactions={filteredTxsForKPIs} />
+                <PaymentCalendar 
+                  transactions={filteredTxsForKPIs} 
+                  onRegisterPayment={handleRegisterPayment}
+                  onToggleStatus={handleToggleStatus}
+                />
               </div>
             )}
 

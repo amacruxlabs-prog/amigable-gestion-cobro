@@ -60,6 +60,20 @@ class TransactionController extends Controller
 
         $transactions = $query->orderBy('created_at', 'desc')->paginate(10);
         
+        // Obtener historial de abonos para estas transacciones
+        $txIds = collect($transactions->items())->pluck('id')->toArray();
+        $payments = DB::table('payments')->whereIn('transaction_id', $txIds)->get();
+        $paymentsGrouped = $payments->groupBy('transaction_id');
+
+        foreach ($transactions->items() as $tx) {
+            $tx->payments = $paymentsGrouped->get($tx->id, collect())->map(function($p) {
+                return [
+                    'amount' => (float)$p->amount,
+                    'date' => substr($p->created_at, 0, 10)
+                ];
+            })->toArray();
+        }
+        
         return $this->successResponse([
             'transactions' => $transactions,
             'kpis' => [
@@ -86,7 +100,7 @@ class TransactionController extends Controller
             'total_amount' => $request->total_amount,
             'paid_amount' => $request->status === 'PAID' ? $request->total_amount : 0,
             'status' => $request->status,
-            'created_at' => now(),
+            'created_at' => $request->created_at ? $request->created_at : now(),
             'updated_at' => now(),
         ]);
 
@@ -150,7 +164,14 @@ class TransactionController extends Controller
             'updated_at' => now()
         ]);
 
-        // Guardar historial de pagos podría ir aquí en una tabla extra, pero por ahora lo mantenemos simple.
+        // Registrar abono individual en el historial de pagos
+        DB::table('payments')->insert([
+            'transaction_id' => $id,
+            'amount' => $request->amount,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
         Cache::forget("business_{$businessId}_dashboard");
 
         return $this->successResponse(['paid_amount' => $newPaidAmount, 'status' => $status], 'Abono registrado');

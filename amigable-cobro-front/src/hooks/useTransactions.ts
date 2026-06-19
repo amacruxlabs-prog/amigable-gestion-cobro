@@ -73,6 +73,7 @@ export function useTransactions() {
         paidAmount: Number(t.paid_amount),
         status: t.status === 'PAID' ? 'Pagado' : 'Por cobrar',
         date: t.created_at.substring(0, 10),
+        payments: t.payments || [],
       }));
 
       const mappedCalendarTxs = calendarData.map((t: any) => ({
@@ -180,7 +181,8 @@ export function useTransactions() {
         client_document: newTx.cedula || '',
         client_phone: newTx.phone || '',
         total_amount: newTx.amount,
-        status: newTx.status === 'Pagado' ? 'PAID' : 'PENDING'
+        status: newTx.status === 'Pagado' ? 'PAID' : 'PENDING',
+        created_at: newTx.date
       });
       toast('Nueva cuenta creada', 'success');
       fetchTransactions(1);

@@ -249,7 +249,12 @@ export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({
                     <MessageSquare className="w-5 h-5 text-[#6366F1]" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[15px] text-slate-900 dark:text-slate-100 tracking-tight">Difusión de WhatsApp</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-[15px] text-slate-900 dark:text-slate-100 tracking-tight">Difusión de WhatsApp</h3>
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100/70 dark:bg-amber-950/30 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-900/50">
+                        Parcialmente integrado, a falta de comunicación con Meta / servicio externo para WhatsApp
+                      </span>
+                    </div>
                     <p className="text-xs text-slate-500 font-medium">Envía mensajes personalizados a grupos de clientes</p>
                   </div>
                 </div>

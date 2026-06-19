@@ -164,6 +164,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     formik.setFieldValue('location', '');
   };
 
+  const setRelativeDate = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    formik.setFieldValue('date', d.toISOString().substring(0, 10));
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl overflow-hidden animate-fade-in">
@@ -351,7 +357,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   )}
                 </div>
                 <div>
-                  <label className="font-semibold block mb-1">Fecha</label>
+                  <label className="font-semibold block mb-1">Fecha de Cobro / Emisión</label>
                   <input
                     type="date"
                     name="date"
@@ -359,6 +365,36 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     onChange={formik.handleChange}
                     className="w-full border p-2 rounded"
                   />
+                  <div className="flex gap-1 mt-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setRelativeDate(0)}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      Hoy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRelativeDate(7)}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      +1 sem
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRelativeDate(15)}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      +15 días
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRelativeDate(30)}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      +1 mes
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -73,12 +73,16 @@ class BusinessController extends Controller
         }
     }
     
-    /**
-     * Get a list of all businesses
-     */
     public function index(Request $request)
     {
-        $businesses = DB::table('businesses')->orderBy('created_at', 'desc')->get();
+        $businesses = DB::table('businesses')
+            ->leftJoin('users', function($join) {
+                $join->on('users.business_id', '=', 'businesses.id')
+                     ->whereRaw('users.id = (select min(id) from users where users.business_id = businesses.id)');
+            })
+            ->select('businesses.*', 'users.email as admin_email')
+            ->orderBy('businesses.created_at', 'desc')
+            ->get();
         return $this->successResponse($businesses, 'Lista de negocios');
     }
 
@@ -120,5 +124,148 @@ class BusinessController extends Controller
             'token' => $token,
             'user' => $user
         ], 'Contexto de negocio actualizado');
+    }
+
+    /**
+     * Get details and summary of a business
+     */
+    public function show($id)
+    {
+        $business = DB::table('businesses')->where('id', $id)->first();
+        if (!$business) {
+            return $this->errorResponse('Negocio no encontrado', 'NOT_FOUND', null, 404);
+        }
+
+        // Obtener estadísticas resumen del negocio
+        $transactionsCount = DB::table('transactions')->where('business_id', $id)->count();
+        $totalAmount = DB::table('transactions')->where('business_id', $id)->sum('total_amount') ?: 0;
+        $totalPaid = DB::table('transactions')->where('business_id', $id)->sum('paid_amount') ?: 0;
+        $totalOutstanding = max(0, $totalAmount - $totalPaid);
+        $usersCount = DB::table('users')->where('business_id', $id)->count();
+
+        // Cuántos deudores (clientes únicos con saldo pendiente)
+        $debtorsCount = DB::table('transactions')
+            ->where('business_id', $id)
+            ->where('status', 'PENDING')
+            ->distinct()
+            ->count('client_name');
+
+        // Obtener los usuarios del negocio (nombre, email)
+        $users = DB::table('users')
+            ->where('business_id', $id)
+            ->select('id', 'name', 'email', 'created_at')
+            ->get();
+
+        // Obtener el usuario admin principal (el primero creado para este negocio)
+        $adminUser = DB::table('users')
+            ->where('business_id', $id)
+            ->orderBy('id', 'asc')
+            ->select('id', 'name', 'email')
+            ->first();
+
+        // Obtener actividad reciente: últimas deudas
+        $recentTransactions = DB::table('transactions')
+            ->where('business_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Obtener actividad reciente: últimos abonos
+        $recentPayments = DB::table('payments')
+            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
+            ->where('transactions.business_id', $id)
+            ->select('payments.id', 'payments.amount', 'payments.created_at', 'transactions.client_name', 'payments.transaction_id')
+            ->orderBy('payments.created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        $summary = [
+            'business' => $business,
+            'admin_user' => $adminUser,
+            'stats' => [
+                'transactions_count' => $transactionsCount,
+                'total_amount' => (float)$totalAmount,
+                'total_paid' => (float)$totalPaid,
+                'total_outstanding' => (float)$totalOutstanding,
+                'users_count' => $usersCount,
+                'debtors_count' => $debtorsCount,
+            ],
+            'users' => $users,
+            'recent_transactions' => $recentTransactions,
+            'recent_payments' => $recentPayments,
+        ];
+
+        return $this->successResponse($summary, 'Detalle del negocio');
+    }
+
+    /**
+     * Update a business details integrally
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|min:3',
+            'owner_name' => 'required|string',
+            'status' => 'required|string|in:ACTIVE,suspended',
+            'admin_email' => 'nullable|email',
+            'admin_password' => 'nullable|string|min:8',
+        ]);
+
+        $business = DB::table('businesses')->where('id', $id)->first();
+        if (!$business) {
+            return $this->errorResponse('Negocio no encontrado', 'NOT_FOUND', null, 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Actualizar datos del negocio
+            DB::table('businesses')->where('id', $id)->update([
+                'name' => $request->name,
+                'owner_name' => $request->owner_name,
+                'status' => $request->status,
+                'updated_at' => now()
+            ]);
+
+            // Obtener el admin principal (el primero del negocio)
+            $adminUser = DB::table('users')
+                ->where('business_id', $id)
+                ->orderBy('id', 'asc')
+                ->first();
+
+            if ($adminUser) {
+                $userData = [
+                    'name' => $request->owner_name,
+                    'updated_at' => now()
+                ];
+
+                if ($request->filled('admin_email')) {
+                    // Validar unicidad del email excluyendo al propio usuario
+                    $emailExists = DB::table('users')
+                        ->where('email', $request->admin_email)
+                        ->where('id', '!=', $adminUser->id)
+                        ->exists();
+                    
+                    if ($emailExists) {
+                        return $this->errorResponse('El email del administrador ya está en uso por otro usuario.', 'EMAIL_TAKEN', null, 422);
+                    }
+                    $userData['email'] = $request->admin_email;
+                }
+
+                if ($request->filled('admin_password')) {
+                    $userData['password'] = Hash::make($request->admin_password);
+                }
+
+                DB::table('users')->where('id', $adminUser->id)->update($userData);
+            }
+
+            DB::commit();
+
+            return $this->successResponse(null, 'Negocio y accesos actualizados exitosamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Error al actualizar negocio: ' . $e->getMessage(), 'UPDATE_BUSINESS_ERROR', null, 500);
+        }
     }
 }

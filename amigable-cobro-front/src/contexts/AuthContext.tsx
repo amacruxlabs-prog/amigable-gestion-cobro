@@ -76,6 +76,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      setRole(null);
+      setBusinessId(null);
+    };
+
+    window.addEventListener('auth-session-expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('auth-session-expired', handleSessionExpired);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const proactivelyRefreshToken = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+      try {
+        const response = await api.post('/auth/refresh');
+        const newToken = response.data?.data?.access_token;
+        if (newToken) {
+          localStorage.setItem('auth_token', newToken);
+          console.log('[AuthContext] Token refreshed proactively.');
+        }
+      } catch (error) {
+        console.error('[AuthContext] Failed to proactively refresh token:', error);
+      }
+    };
+
+    // Refrescar cada 10 minutos (600,000 ms)
+    const interval = setInterval(proactivelyRefreshToken, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const isSuperadmin = role === 'Administrador';
   const isTenantAdmin = role === 'Admin Negocio' || role === 'Admin Local';
   const isAdmin = isSuperadmin || isTenantAdmin;

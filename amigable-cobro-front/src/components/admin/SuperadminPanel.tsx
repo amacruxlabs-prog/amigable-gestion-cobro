@@ -14,7 +14,8 @@ import {
   PlaySquare,
   PauseCircle,
   LogIn,
-  LogOut
+  LogOut,
+  Edit
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFormik } from 'formik';
@@ -269,6 +270,9 @@ const BusinessesView = () => {
   const { toast } = useUI();
   const { updateToken, user } = useAuth();
 
+  const [selectedBusinessDetails, setSelectedBusinessDetails] = useState<any | null>(null);
+  const [editingBusiness, setEditingBusiness] = useState<any | null>(null);
+
   const fetchBusinesses = async () => {
     try {
       setLoading(true);
@@ -280,7 +284,6 @@ const BusinessesView = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchBusinesses();
   }, []);
@@ -302,7 +305,6 @@ const BusinessesView = () => {
         await updateToken(response.data.data.token);
         toast(id ? 'Has ingresado al negocio' : 'Has vuelto al panel global', 'success');
         if (id) {
-          // Redirigimos automáticamente al panel del inquilino
           window.location.href = '/panel/dashboard';
         }
       }
@@ -310,6 +312,68 @@ const BusinessesView = () => {
       toast('Error al cambiar de contexto', 'error');
     }
   };
+
+  const handleViewBusiness = async (id: number) => {
+    try {
+      const response = await api.get(`/superadmin/businesses/${id}`);
+      setSelectedBusinessDetails(response.data.data);
+    } catch (error) {
+      toast('Error al obtener detalles del negocio', 'error');
+    }
+  };
+
+  const handleOpenEdit = (business: any) => {
+    let bizWithEmail = { ...business };
+    if (selectedBusinessDetails && selectedBusinessDetails.business.id === business.id && selectedBusinessDetails.admin_user) {
+      bizWithEmail.admin_email = selectedBusinessDetails.admin_user.email;
+    }
+    setEditingBusiness(bizWithEmail);
+  };
+
+  const editFormik = useFormik({
+    initialValues: {
+      name: '',
+      owner_name: '',
+      status: 'ACTIVE',
+      admin_email: '',
+      admin_password: '',
+    },
+    enableReinitialize: true,
+    validationSchema: Yup.object({
+      name: Yup.string().min(3, 'Mínimo 3 caracteres').required('Requerido'),
+      owner_name: Yup.string().min(3, 'Mínimo 3 caracteres').required('Requerido'),
+      status: Yup.string().oneOf(['ACTIVE', 'suspended']).required('Requerido'),
+      admin_email: Yup.string().email('Correo inválido').required('Requerido'),
+      admin_password: Yup.string().min(8, 'Mínimo 8 caracteres').nullable(),
+    }),
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        await api.put(`/superadmin/businesses/${editingBusiness.id}`, values);
+        toast('Negocio y accesos actualizados exitosamente', 'success');
+        setEditingBusiness(null);
+        if (selectedBusinessDetails && selectedBusinessDetails.business.id === editingBusiness.id) {
+          handleViewBusiness(editingBusiness.id);
+        }
+        fetchBusinesses();
+      } catch (error: any) {
+        toast(error.response?.data?.message || 'Error al actualizar negocio', 'error');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (editingBusiness) {
+      editFormik.setValues({
+        name: editingBusiness.name,
+        owner_name: editingBusiness.owner_name,
+        status: editingBusiness.status || 'ACTIVE',
+        admin_email: editingBusiness.admin_email || '',
+        admin_password: '',
+      });
+    }
+  }, [editingBusiness]);
 
   const formik = useFormik({
     initialValues: {
@@ -389,7 +453,13 @@ const BusinessesView = () => {
             ) : null}
             {businesses.map(b => (
               <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4 font-bold text-slate-800">{b.name}</td>
+                <td 
+                  onClick={() => handleViewBusiness(b.id)}
+                  className="px-6 py-4 font-bold text-indigo-650 hover:text-indigo-800 hover:underline cursor-pointer"
+                  title="Haz clic para ver el resumen y estadísticas de este negocio"
+                >
+                  {b.name}
+                </td>
                 <td className="px-6 py-4">
                   <p className="font-medium text-slate-700">{b.owner_name}</p>
                   <p className="text-xs text-slate-500">ID: {b.id}</p>
@@ -407,14 +477,21 @@ const BusinessesView = () => {
                 <td className="px-6 py-4 text-right space-x-2">
                   <button 
                     onClick={() => handleImpersonate(b.id)}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 rounded transition-colors" 
+                    className="p-1.5 text-slate-400 hover:text-indigo-655 bg-slate-100 hover:bg-indigo-50/80 rounded transition-colors cursor-pointer" 
                     title="Entrar como este negocio"
                   >
                     <LogIn className="w-4 h-4" />
                   </button>
                   <button 
+                    onClick={() => handleOpenEdit(b)}
+                    className="p-1.5 text-slate-400 hover:text-blue-655 bg-slate-100 hover:bg-blue-50/80 rounded transition-colors cursor-pointer" 
+                    title="Editar negocio de manera integral"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button 
                     onClick={() => handleToggleStatus(b.id)}
-                    className="p-1.5 text-slate-400 hover:text-orange-600 bg-slate-100 hover:bg-orange-50 rounded transition-colors" 
+                    className="p-1.5 text-slate-400 hover:text-orange-600 bg-slate-100 hover:bg-orange-50/80 rounded transition-colors cursor-pointer" 
                     title={b.status === 'ACTIVE' ? 'Suspender' : 'Activar'}
                   >
                     {b.status === 'ACTIVE' ? <PauseCircle className="w-4 h-4" /> : <PlaySquare className="w-4 h-4" />}
@@ -496,6 +573,308 @@ const BusinessesView = () => {
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 font-bold text-slate-500 bg-slate-100 rounded hover:bg-slate-200">Cancelar</button>
                 <button type="submit" disabled={formik.isSubmitting || !formik.isValid} className="px-4 py-2 font-bold text-white rounded disabled:opacity-50" style={{ background: 'var(--color-brand)' }}>
                   {formik.isSubmitting ? 'Guardando...' : 'Guardar Negocio'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Business Summary & Details Modal */}
+      {selectedBusinessDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-50 p-5 border-b border-slate-200 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 text-indigo-650 rounded-lg">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">
+                    Ficha y Resumen del Negocio: {selectedBusinessDetails.business.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">ID del Tenant: {selectedBusinessDetails.business.id}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedBusinessDetails(null)}
+                className="text-slate-400 hover:text-slate-655 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              
+              {/* Basic Info Grid */}
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Nombre Comercial</span>
+                  <span className="font-bold text-slate-800 text-sm">{selectedBusinessDetails.business.name}</span>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Administrador / Propietario</span>
+                  <span className="font-bold text-slate-800 text-sm">{selectedBusinessDetails.business.owner_name}</span>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Estado de Operación</span>
+                  <span className={`inline-block px-2.5 py-0.5 mt-1 rounded-full text-xs font-bold ${
+                    selectedBusinessDetails.business.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {selectedBusinessDetails.business.status === 'ACTIVE' ? 'Activo' : 'Suspendido'}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Fecha de Alta</span>
+                  <span className="font-mono text-xs text-slate-600 block mt-1">
+                    {new Date(selectedBusinessDetails.business.created_at).toLocaleString('es-ES')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Stats Metrics */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-3">Estadísticas Financieras y Clientes</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                  <div className="border border-slate-150 p-4 rounded-xl bg-white shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Total Emitido</span>
+                    <span className="font-mono text-base font-bold text-slate-850">
+                      ${selectedBusinessDetails.stats.total_amount.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                    </span>
+                    <p className="text-[10px] text-slate-400 mt-1">{selectedBusinessDetails.stats.transactions_count} registros</p>
+                  </div>
+                  <div className="border border-slate-150 p-4 rounded-xl bg-white shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Total Cobrado</span>
+                    <span className="font-mono text-base font-bold text-emerald-600">
+                      +${selectedBusinessDetails.stats.total_paid.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                    </span>
+                    <p className="text-[10px] text-emerald-500 mt-1 font-semibold">
+                      {selectedBusinessDetails.stats.total_amount > 0 
+                        ? ((selectedBusinessDetails.stats.total_paid / selectedBusinessDetails.stats.total_amount) * 100).toFixed(0) 
+                        : 0}% cobrado
+                    </p>
+                  </div>
+                  <div className="border border-slate-150 p-4 rounded-xl bg-white shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Saldo por Cobrar</span>
+                    <span className={`font-mono text-base font-bold ${selectedBusinessDetails.stats.total_outstanding > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      ${selectedBusinessDetails.stats.total_outstanding.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                    </span>
+                    <p className="text-[10px] text-slate-400 mt-1">Deuda pendiente</p>
+                  </div>
+                  <div className="border border-slate-150 p-4 rounded-xl bg-white shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Clientes Deudores</span>
+                    <span className="font-mono text-base font-bold text-indigo-650">
+                      {selectedBusinessDetails.stats.debtors_count} clientes
+                    </span>
+                    <p className="text-[10px] text-indigo-500 mt-1">Con saldo activo</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actividad Reciente */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Deudas Recientes */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+                  <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-3 flex justify-between items-center border-b pb-2">
+                    <span>Deudas Recientes</span>
+                    <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-semibold font-mono">Últimas 5</span>
+                  </h4>
+                  {selectedBusinessDetails.recent_transactions.length === 0 ? (
+                    <p className="text-xs text-slate-450 py-4 text-center">No hay deudas registradas.</p>
+                  ) : (
+                    <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1 divide-y divide-slate-50">
+                      {selectedBusinessDetails.recent_transactions.map((tx: any) => (
+                        <div key={tx.id} className="flex justify-between items-center text-xs pt-2 first:pt-0">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800">{tx.client_name}</span>
+                            <span className="text-[9px] text-slate-400 font-mono">ID: #{tx.id} · {tx.created_at.substring(0, 10)}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold font-mono block text-slate-700">
+                              ${Number(tx.total_amount).toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
+                              tx.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {tx.status === 'PAID' ? 'Pagado' : 'Pendiente'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Abonos Recientes */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+                  <h4 className="text-xs font-bold text-slate-455 uppercase tracking-wider mb-3 flex justify-between items-center border-b pb-2">
+                    <span>Abonos Recientes</span>
+                    <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-semibold font-mono">Últimos 5</span>
+                  </h4>
+                  {selectedBusinessDetails.recent_payments.length === 0 ? (
+                    <p className="text-xs text-slate-455 py-4 text-center">No hay abonos registrados.</p>
+                  ) : (
+                    <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1 divide-y divide-slate-50">
+                      {selectedBusinessDetails.recent_payments.map((p: any) => (
+                        <div key={p.id} className="flex justify-between items-center text-xs pt-2 first:pt-0">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800">{p.client_name}</span>
+                            <span className="text-[9px] text-slate-400 font-mono">ID Pago: #{p.id} · ID Cuenta: #{p.transaction_id}</span>
+                          </div>
+                          <span className="font-bold font-mono text-emerald-600 text-sm">
+                            +${Number(p.amount).toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Users list */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-3">
+                  Usuarios del Negocio ({selectedBusinessDetails.stats.users_count})
+                </h4>
+                {selectedBusinessDetails.users.length === 0 ? (
+                  <p className="text-xs text-slate-400">No hay usuarios registrados para este negocio.</p>
+                ) : (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
+                        <tr>
+                          <th className="px-4 py-2.5">Nombre</th>
+                          <th className="px-4 py-2.5">Email</th>
+                          <th className="px-4 py-2.5">Miembro Desde</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedBusinessDetails.users.map((u: any) => (
+                          <tr key={u.id} className="hover:bg-slate-50">
+                            <td className="px-4 py-2.5 font-bold text-slate-800">{u.name}</td>
+                            <td className="px-4 py-2.5 text-slate-650 font-mono">{u.email}</td>
+                            <td className="px-4 py-2.5 text-slate-500 font-mono">
+                              {new Date(u.created_at).toLocaleDateString('es-ES')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-between shrink-0">
+              <button
+                type="button"
+                onClick={() => handleOpenEdit(selectedBusinessDetails.business)}
+                className="btn bg-indigo-50 hover:bg-indigo-100 text-indigo-650 font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition-colors"
+              >
+                Editar Datos
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedBusinessDetails(null)}
+                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Business Modal */}
+      {editingBusiness && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Editar Negocio: {editingBusiness.name}</h3>
+            
+            <form className="space-y-4" onSubmit={editFormik.handleSubmit}>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Nombre Comercial del Negocio</label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  onChange={editFormik.handleChange} 
+                  value={editFormik.values.name} 
+                />
+                {editFormik.touched.name && editFormik.errors.name ? <div className="text-red-500 text-xs mt-1">{editFormik.errors.name}</div> : null}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-1">Propietario / Dueño principal</label>
+                <input 
+                  type="text" 
+                  name="owner_name" 
+                  className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  onChange={editFormik.handleChange} 
+                  value={editFormik.values.owner_name} 
+                />
+                {editFormik.touched.owner_name && editFormik.errors.owner_name ? <div className="text-red-500 text-xs mt-1">{editFormik.errors.owner_name}</div> : null}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1">Email del Administrador (Acceso)</label>
+                <input 
+                  type="email" 
+                  name="admin_email" 
+                  className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  onChange={editFormik.handleChange} 
+                  value={editFormik.values.admin_email} 
+                />
+                {editFormik.touched.admin_email && editFormik.errors.admin_email ? <div className="text-red-500 text-xs mt-1">{editFormik.errors.admin_email}</div> : null}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1">Nueva Contraseña del Admin (Dejar vacío para mantener actual)</label>
+                <input 
+                  type="password" 
+                  name="admin_password" 
+                  className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  onChange={editFormik.handleChange} 
+                  value={editFormik.values.admin_password} 
+                  placeholder="••••••••"
+                />
+                {editFormik.touched.admin_password && editFormik.errors.admin_password ? <div className="text-red-500 text-xs mt-1">{editFormik.errors.admin_password}</div> : null}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1">Estado del Negocio</label>
+                <select
+                  name="status"
+                  className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  onChange={editFormik.handleChange}
+                  value={editFormik.values.status}
+                >
+                  <option value="ACTIVE">Activo</option>
+                  <option value="suspended">Suspendido</option>
+                </select>
+                {editFormik.touched.status && editFormik.errors.status ? <div className="text-red-500 text-xs mt-1">{editFormik.errors.status}</div> : null}
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingBusiness(null)} 
+                  className="px-4 py-2 font-bold text-slate-500 bg-slate-100 rounded hover:bg-slate-200 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={editFormik.isSubmitting || !editFormik.isValid} 
+                  className="px-4 py-2 font-bold text-white rounded disabled:opacity-50 cursor-pointer" 
+                  style={{ background: 'var(--color-brand)' }}
+                >
+                  {editFormik.isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
               </div>
             </form>

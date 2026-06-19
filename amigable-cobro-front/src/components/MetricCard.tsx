@@ -1,6 +1,8 @@
 import React from 'react';
 import { TrendingUp, DollarSign, CheckCircle2, AlertCircle, Percent, ArrowUpRight } from 'lucide-react';
 
+import { formatCurrency } from '../utils/format';
+
 interface MetricCardProps {
   id: string;
   title: string;

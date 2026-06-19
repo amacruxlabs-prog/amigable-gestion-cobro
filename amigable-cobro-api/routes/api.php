@@ -5,10 +5,10 @@ use App\Http\Controllers\Auth\AuthController;
 
 Route::group(['prefix' => 'auth'], function () {
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('refresh', [AuthController::class, 'refresh']);
 
     Route::group(['middleware' => 'auth:api'], function () {
         Route::post('logout', [AuthController::class, 'logout']);
-        Route::post('refresh', [AuthController::class, 'refresh']);
         Route::get('me', [AuthController::class, 'me']);
     });
 });
@@ -20,7 +20,9 @@ use App\Http\Controllers\SuperAdmin\GlobalSettingsController;
 Route::group(['prefix' => 'superadmin', 'middleware' => 'auth:api'], function () {
     Route::get('kpis', [SaasAnalyticsController::class, 'kpis']);
     Route::get('businesses', [BusinessController::class, 'index']);
+    Route::get('businesses/{id}', [BusinessController::class, 'show']);
     Route::post('businesses', [BusinessController::class, 'store']);
+    Route::put('businesses/{id}', [BusinessController::class, 'update']);
     Route::put('businesses/{id}/toggle-status', [BusinessController::class, 'toggleStatus']);
     Route::post('impersonate', [BusinessController::class, 'impersonate']);
     

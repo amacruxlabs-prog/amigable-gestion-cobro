@@ -19,6 +19,7 @@ class StoreTransactionRequest extends FormRequest
             'client_phone' => 'nullable|string|max:255',
             'total_amount' => 'required|numeric|min:0',
             'status' => 'required|in:PENDING,PAID',
+            'created_at' => 'nullable|date',
         ];
     }
 }

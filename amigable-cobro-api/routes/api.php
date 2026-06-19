@@ -64,4 +64,5 @@ Route::group([
     Route::put('transactions/{id}', [TransactionController::class, 'update']);
     Route::delete('transactions/{id}', [TransactionController::class, 'destroy']);
     Route::post('transactions/{id}/payment', [TransactionController::class, 'addPayment']);
+    Route::post('transactions/apply-discount', [TransactionController::class, 'applyDiscount']);
 });

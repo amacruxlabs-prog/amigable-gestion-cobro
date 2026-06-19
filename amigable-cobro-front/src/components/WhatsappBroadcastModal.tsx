@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { formatCurrency } from '../utils/format';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Phone, Send, MessageSquare, CheckSquare, 
@@ -58,7 +59,7 @@ const TEMPLATE_PRESETS: TemplatePreset[] = [
 ];
 
 const formatCOP = (v: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+  formatCurrency(v);
 
 export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({ 
   isOpen, 

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
 import { useAuth } from '../contexts/AuthContext';
+import { formatCurrency, getVenezuelaTodayStr } from '../utils/format';
 
 interface PaymentCalendarProps {
   transactions: Transaction[];
@@ -110,8 +111,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
     days.push(i);
   }
 
-  const formatPrice = (v: number) => 
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+  const formatPrice = (v: number) => formatCurrency(v);
 
   const prevPeriod = () => {
     if (viewMode === 'mes') {
@@ -141,7 +141,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
 
   const periodLabel = useMemo(() => {
     if (viewMode === 'mes' || viewMode === 'agenda') {
-      return new Date(year, month, 1).toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+      return new Date(year, month, 1).toLocaleString('es-ES', { month: 'long', year: 'numeric', timeZone: 'America/Caracas' });
     } else {
       // Find Monday and Sunday of current week
       const day = currentDate.getDay();
@@ -150,8 +150,8 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       
-      const monStr = monday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-      const sunStr = sunday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+      const monStr = monday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'America/Caracas' });
+      const sunStr = sunday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Caracas' });
       return `Semana: ${monStr} - ${sunStr}`;
     }
   }, [currentDate, viewMode, year, month]);
@@ -225,7 +225,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
         // 4. Promesa de Pago Event (3 days after due date)
         const promiseDate = new Date(baseDate);
         promiseDate.setDate(promiseDate.getDate() + 3);
-        const todayStr = new Date().toISOString().substring(0, 10);
+        const todayStr = getVenezuelaTodayStr();
         const promiseDateStr = promiseDate.toISOString().substring(0, 10);
         seeded.push({
           id: `promise-${tx.id}`,
@@ -399,7 +399,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       }
       let existing = groups.find(g => g.dateStr === item.date);
       if (!existing) {
-        const dateLabel = new Date(item.date + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+        const dateLabel = new Date(item.date + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Caracas' });
         existing = { dateStr: item.date, dateLabel, items: [] };
         groups.push(existing);
       }
@@ -552,6 +552,12 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       return;
     }
 
+    const todayStr = getVenezuelaTodayStr();
+    if (rescheduleDate < todayStr) {
+      toast('No puedes reprogramar actividades a fechas pasadas.', 'error');
+      return;
+    }
+
     const updated = events.map(evt => {
       if (evt.id === activeEvent.id) {
         return { 
@@ -594,6 +600,12 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       return;
     }
 
+    const todayStr = getVenezuelaTodayStr();
+    if (newEvent.date < todayStr) {
+      toast('No puedes programar actividades en fechas pasadas.', 'error');
+      return;
+    }
+
     const selectedClientObj = uniqueClients.find(c => c.name === newEvent.clientName);
     const clientTx = transactions.find(t => t.clientName === newEvent.clientName && t.status !== 'Pagado');
 
@@ -628,47 +640,47 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       
       {/* KPI METRICS BANNER (Advanced Control Center Feature) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-slate-850 dark:to-slate-800 p-4 rounded-2xl border border-indigo-150 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-indigo-600 text-white rounded-xl">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 rounded-xl">
             <Percent className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Eficiencia de Cobro</span>
             <span className="text-lg font-bold text-slate-850 dark:text-slate-200">{monthlyStats.collectionEfficiency}%</span>
-            <span className="text-[9px] text-slate-400 block mt-0.5">Vencimientos cobrados</span>
+            <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">Vencimientos cobrados</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-slate-850 dark:to-slate-800 p-4 rounded-2xl border border-purple-150 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-purple-650 text-white rounded-xl">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="p-3 bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 rounded-xl">
             <Handshake className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Promesas de Pago</span>
             <span className="text-lg font-bold text-slate-850 dark:text-slate-200">{monthlyStats.promesasMet} / {monthlyStats.promesasTotal}</span>
-            <span className="text-[9px] text-slate-400 block mt-0.5">Compromisos cumplidos</span>
+            <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">Compromisos cumplidos</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-slate-850 dark:to-slate-800 p-4 rounded-2xl border border-blue-150 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-blue-600 text-white rounded-xl">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-655 dark:text-blue-400 rounded-xl">
             <PhoneCall className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Llamadas Realizadas</span>
             <span className="text-lg font-bold text-slate-850 dark:text-slate-200">{monthlyStats.llamadasDone} / {monthlyStats.llamadasTotal}</span>
-            <span className="text-[9px] text-slate-400 block mt-0.5">Seguimientos completados</span>
+            <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">Seguimientos completados</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-slate-850 dark:to-slate-800 p-4 rounded-2xl border border-emerald-150 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-emerald-600 text-white rounded-xl">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-650 dark:text-emerald-400 rounded-xl">
             <TrendingUp className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Monto Proyectado</span>
             <span className="text-base font-bold text-slate-850 dark:text-slate-200 font-mono">{formatPrice(monthlyStats.totalProjectedAmount)}</span>
-            <span className="text-[9px] text-slate-400 block mt-0.5">Pendiente por cobrar mes</span>
+            <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">Pendiente por cobrar mes</span>
           </div>
         </div>
       </div>
@@ -828,7 +840,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                   const dayEvents = eventsByDate.get(dateStr) || [];
                   
                   const isSelected = selectedDateStr === dateStr;
-                  const todayStr = new Date().toISOString().substring(0, 10);
+                  const todayStr = getVenezuelaTodayStr();
                   const isToday = dateStr === todayStr;
 
                   return (
@@ -903,7 +915,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
               {weekDates.map(date => {
                 const dateStr = date.toISOString().substring(0, 10);
                 const dayEvents = eventsByDate.get(dateStr) || [];
-                const isToday = dateStr === new Date().toISOString().substring(0, 10);
+                const isToday = dateStr === getVenezuelaTodayStr();
                 const isSelected = selectedDateStr === dateStr;
 
                 return (
@@ -921,7 +933,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                     {/* Day Column Header */}
                     <div className="border-b pb-2 mb-3 dark:border-slate-800">
                       <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
-                        {date.toLocaleDateString('es-ES', { weekday: 'short' })}
+                        {date.toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'America/Caracas' })}
                       </div>
                       <div className={`text-base font-extrabold mt-0.5 ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-350'}`}>
                         {date.getDate()}
@@ -944,7 +956,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                             </div>
                             <div className="font-bold text-[10px] mt-1 break-words leading-tight">{evt.clientName}</div>
                             {evt.amount !== undefined && (
-                              <div className="text-[9px] font-bold font-mono mt-0.5 opacity-80">{formatPrice(evt.amount)}</div>
+                              <div className="text-[9px] font-bold font-mono mt-0.5 opacity-80">{formatCurrency(evt.amount)}</div>
                             )}
                           </div>
                         ))
@@ -969,7 +981,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                   <div key={group.dateStr} className="relative pl-6 border-l-2 border-indigo-100 dark:border-slate-800">
                     {/* Timeline dot */}
                     <div className={`w-3.5 h-3.5 rounded-full absolute -left-[7px] top-1.5 border-2 border-white dark:border-slate-900 ${
-                      group.dateStr === new Date().toISOString().substring(0, 10) ? 'bg-indigo-650 ring-2 ring-indigo-150' : 'bg-slate-300 dark:bg-slate-700'
+                      group.dateStr === getVenezuelaTodayStr() ? 'bg-indigo-650 ring-2 ring-indigo-150' : 'bg-slate-300 dark:bg-slate-700'
                     }`} />
                     
                     <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 capitalize mb-3">
@@ -1079,7 +1091,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                 <div>
                   <h4 className="text-xs uppercase font-bold text-slate-400 dark:text-slate-500">Gestión del Día</h4>
                   <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">
-                    {new Date(selectedDateStr + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    {new Date(selectedDateStr + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Caracas' })}
                   </h3>
                 </div>
                 <button 
@@ -1371,11 +1383,22 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
               {/* Drawer Program Event Footer button */}
               {isAdmin && (
                 <button
+                  disabled={selectedDateStr ? selectedDateStr < getVenezuelaTodayStr() : false}
                   onClick={() => {
+                    const todayStr = getVenezuelaTodayStr();
+                    if (selectedDateStr && selectedDateStr < todayStr) {
+                      toast('No puedes programar actividades en fechas pasadas.', 'error');
+                      return;
+                    }
                     setNewEvent(prev => ({ ...prev, date: selectedDateStr }));
                     setIsAddEventOpen(true);
                   }}
-                  className="mt-4 w-full bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                  className={`mt-4 w-full font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm ${
+                    selectedDateStr && selectedDateStr < getVenezuelaTodayStr()
+                      ? 'bg-slate-105 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700 shadow-none'
+                      : 'bg-indigo-650 hover:bg-indigo-700 text-white cursor-pointer'
+                  }`}
+                  title={selectedDateStr && selectedDateStr < getVenezuelaTodayStr() ? "No se pueden programar actividades en fechas pasadas" : "Programar actividad para este día"}
                 >
                   <Plus className="w-4 h-4" /> Programar Actividad
                 </button>
@@ -1444,6 +1467,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                   <input
                     type="date"
                     required
+                    min={getVenezuelaTodayStr()}
                     className="w-full border dark:border-slate-750 p-2.5 rounded-xl bg-white dark:bg-slate-850 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
                     value={newEvent.date}
                     onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
@@ -1526,6 +1550,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                 <input
                   type="date"
                   required
+                  min={getVenezuelaTodayStr()}
                   className="w-full border dark:border-slate-750 p-2.5 rounded-xl bg-white dark:bg-slate-850 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
                   value={rescheduleDate}
                   onChange={e => setRescheduleDate(e.target.value)}

@@ -74,6 +74,7 @@ export function useTransactions() {
         status: t.status === 'PAID' ? 'Pagado' : 'Por cobrar',
         date: t.created_at.substring(0, 10),
         payments: t.payments || [],
+        discounts: t.discounts || [],
       }));
 
       const mappedCalendarTxs = calendarData.map((t: any) => ({
@@ -193,7 +194,16 @@ export function useTransactions() {
 
   const handleApplyDiscount = async (txIds: string[], percentage: number) => {
     if (!isAdmin && !isSuperadmin) return;
-    toast("Función de descuento masivo en desarrollo.", 'error');
+    try {
+      await api.post('/tenant/transactions/apply-discount', {
+        transaction_ids: txIds.map(id => Number(id)),
+        percentage
+      });
+      toast('Descuento aplicado exitosamente', 'success');
+      fetchTransactions(currentPage);
+    } catch (err: any) {
+      toast(err.response?.data?.message || 'Error al aplicar descuento', 'error');
+    }
   };
 
   return {

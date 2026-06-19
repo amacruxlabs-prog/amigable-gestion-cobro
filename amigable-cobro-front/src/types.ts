@@ -9,6 +9,7 @@ export interface Transaction {
   cedula?: string;
   paidAmount?: number; // Cumulative partial payments registered so far
   payments?: { amount: number; date: string }[]; // Historical payments registry
+  discounts?: { percentage: number; amount: number; date: string }[]; // Historical discounts registry
   originalData?: Record<string, string>; // Keeps original spreadsheet row values for full fidelity
 }
 

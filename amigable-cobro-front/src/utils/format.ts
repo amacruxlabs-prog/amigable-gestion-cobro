@@ -78,6 +78,29 @@ export function formatTime(dateInput: string | Date | null | undefined): string 
 }
 
 /**
+ * Formats both date and time as dd/mm/yyyy hh:mm AM/PM in Venezuela timezone (America/Caracas)
+ */
+export function formatDateTime(dateInput: string | Date | null | undefined): string {
+  if (!dateInput) return '';
+
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
+  const formatter = new Intl.DateTimeFormat('es-VE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Caracas'
+  });
+  return formatter.format(date).replace(',', '');
+}
+
+/**
  * Returns current date in Venezuela timezone formatted as YYYY-MM-DD
  */
 export function getVenezuelaTodayStr(): string {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatCurrency, formatDate, formatDateTime } from '../../utils/format';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Shield, 
@@ -185,7 +186,7 @@ const DashboardView = () => {
         />
         <MetricCard 
           title="Ingreso Mensual Recurrente" 
-          value={`$${Number(kpis.mrr).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD`} 
+          value={`${formatCurrency(kpis.mrr, true)} USD`} 
           subtitle="Estimación base SaaS" 
           icon={DollarSign} 
           color="text-emerald-600" 
@@ -193,7 +194,7 @@ const DashboardView = () => {
         />
         <MetricCard 
           title="Volumen Global Movilizado" 
-          value={`$${Number(kpis.global_volume).toLocaleString('en-US')}`} 
+          value={formatCurrency(kpis.global_volume)} 
           subtitle="Suma de total_amount en todos los tenants" 
           icon={Activity} 
           color="text-blue-600" 
@@ -631,7 +632,7 @@ const BusinessesView = () => {
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Fecha de Alta</span>
                   <span className="font-mono text-xs text-slate-600 block mt-1">
-                    {new Date(selectedBusinessDetails.business.created_at).toLocaleString('es-ES')}
+                    {formatDateTime(selectedBusinessDetails.business.created_at)}
                   </span>
                 </div>
               </div>
@@ -643,14 +644,14 @@ const BusinessesView = () => {
                   <div className="border border-slate-150 p-4 rounded-xl bg-white shadow-xs">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Total Emitido</span>
                     <span className="font-mono text-base font-bold text-slate-850">
-                      ${selectedBusinessDetails.stats.total_amount.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                      {formatCurrency(selectedBusinessDetails.stats.total_amount)}
                     </span>
                     <p className="text-[10px] text-slate-400 mt-1">{selectedBusinessDetails.stats.transactions_count} registros</p>
                   </div>
                   <div className="border border-slate-150 p-4 rounded-xl bg-white shadow-xs">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Total Cobrado</span>
                     <span className="font-mono text-base font-bold text-emerald-600">
-                      +${selectedBusinessDetails.stats.total_paid.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                      +{formatCurrency(selectedBusinessDetails.stats.total_paid)}
                     </span>
                     <p className="text-[10px] text-emerald-500 mt-1 font-semibold">
                       {selectedBusinessDetails.stats.total_amount > 0 
@@ -661,7 +662,7 @@ const BusinessesView = () => {
                   <div className="border border-slate-150 p-4 rounded-xl bg-white shadow-xs">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Saldo por Cobrar</span>
                     <span className={`font-mono text-base font-bold ${selectedBusinessDetails.stats.total_outstanding > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      ${selectedBusinessDetails.stats.total_outstanding.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                      {formatCurrency(selectedBusinessDetails.stats.total_outstanding)}
                     </span>
                     <p className="text-[10px] text-slate-400 mt-1">Deuda pendiente</p>
                   </div>
@@ -691,11 +692,11 @@ const BusinessesView = () => {
                         <div key={tx.id} className="flex justify-between items-center text-xs pt-2 first:pt-0">
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-800">{tx.client_name}</span>
-                            <span className="text-[9px] text-slate-400 font-mono">ID: #{tx.id} · {tx.created_at.substring(0, 10)}</span>
+                            <span className="text-[9px] text-slate-400 font-mono">ID: #{tx.id} · {formatDate(tx.created_at)}</span>
                           </div>
                           <div className="text-right">
                             <span className="font-bold font-mono block text-slate-700">
-                              ${Number(tx.total_amount).toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                              {formatCurrency(tx.total_amount)}
                             </span>
                             <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
                               tx.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
@@ -723,10 +724,10 @@ const BusinessesView = () => {
                         <div key={p.id} className="flex justify-between items-center text-xs pt-2 first:pt-0">
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-800">{p.client_name}</span>
-                            <span className="text-[9px] text-slate-400 font-mono">ID Pago: #{p.id} · ID Cuenta: #{p.transaction_id}</span>
+                            <span className="text-[9px] text-slate-400 font-mono">ID Pago: #{p.id} · ID Cuenta: #{p.transaction_id} · {formatDate(p.created_at)}</span>
                           </div>
                           <span className="font-bold font-mono text-emerald-600 text-sm">
-                            +${Number(p.amount).toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                            +{formatCurrency(p.amount)}
                           </span>
                         </div>
                       ))}

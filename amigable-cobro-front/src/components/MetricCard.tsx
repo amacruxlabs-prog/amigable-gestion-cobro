@@ -10,6 +10,7 @@ interface MetricCardProps {
   type: 'total' | 'paid' | 'receivable' | 'percentage';
   subtext?: string;
   count?: number;
+  onShowDetails?: () => void;
 }
 
 const CONFIG = {
@@ -63,13 +64,13 @@ const CONFIG = {
   },
 } as const;
 
-export const MetricCard: React.FC<MetricCardProps> = ({ id, title, value, type, subtext, count }) => {
+export const MetricCard: React.FC<MetricCardProps> = ({ id, title, value, type, subtext, count, onShowDetails }) => {
   const cfg = CONFIG[type];
   const Icon = cfg.icon;
 
   const formattedValue = type === 'percentage'
     ? `${value.toFixed(1)}%`
-    : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
+    : formatCurrency(value);
 
   const progress = type === 'percentage'
     ? Math.min(100, Math.max(0, value))
@@ -78,7 +79,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({ id, title, value, type, 
   return (
     <div
       id={id}
-      className="card card-hover relative overflow-hidden group cursor-default"
+      onClick={onShowDetails}
+      className={`card relative overflow-hidden group transition-all duration-300 ${
+        onShowDetails 
+          ? 'cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-800 hover:shadow-md' 
+          : 'cursor-default'
+      }`}
     >
       {/* Subtle gradient orb in background */}
       <div
@@ -136,6 +142,13 @@ export const MetricCard: React.FC<MetricCardProps> = ({ id, title, value, type, 
               style={{ width: `${progress}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {onShowDetails && (
+        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] font-bold text-indigo-650 dark:text-indigo-400 transition-colors">
+          <span>Ver desglose detallado</span>
+          <ArrowUpRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </div>
       )}
     </div>

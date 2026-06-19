@@ -1,5 +1,6 @@
 import React from 'react';
 import { Transaction, FilterState } from '../types';
+import { formatCurrency, formatDate, getVenezuelaTodayStr } from '../utils/format';
 import { Search, ChevronLeft, ChevronRight, Filter, Calendar, DollarSign, PlusCircle, Trash2, CheckCircle2, AlertCircle, Phone, Plus, Check, X, History, MapPin, User, UserPlus, Users } from 'lucide-react';
 import { useTransactionTable } from '../hooks/useTransactionTable';
 import { AddTransactionModal } from './AddTransactionModal';
@@ -188,19 +189,24 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       setPhoneCountryCode('+58');
       setNewLocation('');
       setNewStatus('Cobrar');
-      setNewDate(new Date().toISOString().substring(0, 10));
+      setNewDate(getVenezuelaTodayStr());
       setFormError('');
     }
   }, [showAddForm, uniqueClients.length]);
 
   const formatMoney = (val: number) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+    return formatCurrency(val);
   };
 
   const getPastDateString = (daysAgo: number): string => {
-    const d = new Date();
+    const todayStr = getVenezuelaTodayStr();
+    const [year, month, day] = todayStr.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
     d.setDate(d.getDate() - daysAgo);
-    return d.toISOString().substring(0, 10);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dayVal = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dayVal}`;
   };
 
   const handleSetPresetRange = (days: number | null) => {
@@ -461,9 +467,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       </div>
                     </td>
                     <td className="py-3.5 px-6 text-slate-500">{t.cedula || <span className="text-slate-300 italic">No esp.</span>}</td>
-                    <td className="py-3.5 px-6 text-slate-500">{t.date}</td>
+                    <td className="py-3.5 px-6 text-slate-500">{formatDate(t.date)}</td>
                     <td className="py-3.5 px-6 text-slate-900 font-bold font-mono text-sm text-[13px] dark:text-slate-100">
-                      {formatMoney(t.amount)}
+                      <div className="flex flex-col">
+                        <span>{formatMoney(t.amount)}</span>
+                        {t.discounts && t.discounts.length > 0 && (
+                          <span className="text-[10px] text-purple-650 dark:text-purple-400 font-mono font-medium mt-0.5" title="Descuentos aplicados">
+                            Desc: {t.discounts.map(d => `${d.percentage}% (-${formatMoney(d.amount)})`).join(', ')}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     
                     {/* Abonos y Saldo dynamic column */}
@@ -566,7 +579,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                     setInlineAbonoErr('Excede saldo');
                                     return;
                                   }
-                                  onRegisterPayment(t.id, val, new Date().toISOString().substring(0, 10));
+                                  onRegisterPayment(t.id, val, getVenezuelaTodayStr());
                                   setActiveAbonoTxId(null);
                                   setInlineAbonoVal('');
                                 }}
@@ -596,7 +609,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             <span className="font-bold text-slate-500 text-[9px] uppercase border-b border-slate-200 pb-0.5 dark:text-slate-400 dark:border-slate-700">Historial de abonos:</span>
                             {t.payments.map((h, i) => (
                               <div key={i} className="flex justify-between items-center text-[10px] font-mono border-b border-slate-100 last:border-none py-0.5 text-slate-600 dark:border-slate-800 dark:text-slate-300">
-                                <span>{h.date}</span>
+                                <span>{formatDate(h.date)}</span>
                                 <span className="font-bold text-emerald-700 dark:text-emerald-400">+{formatMoney(h.amount)}</span>
                               </div>
                             ))}
@@ -725,6 +738,22 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           }
         });
         allPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        const allDiscounts: { txId: string; percentage: number; amount: number; date: string }[] = [];
+        const txsForDiscounts = isSingle ? [activeTx] : c.transactions;
+        txsForDiscounts.forEach((t: any) => {
+          if (t.discounts && t.discounts.length > 0) {
+            t.discounts.forEach((d: any) => {
+              allDiscounts.push({
+                txId: t.id,
+                percentage: d.percentage,
+                amount: d.amount,
+                date: d.date
+              });
+            });
+          }
+        });
+        allDiscounts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         return (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
@@ -859,8 +888,17 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             return (
                               <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                                 <td className="px-4 py-2.5 font-mono text-slate-400">{t.id}</td>
-                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">{t.date}</td>
-                                <td className="px-4 py-2.5 font-bold font-mono text-slate-700 dark:text-slate-350">{formatMoney(t.amount)}</td>
+                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">{formatDate(t.date)}</td>
+                                <td className="px-4 py-2.5 font-bold font-mono text-slate-700 dark:text-slate-350">
+                                  <div className="flex flex-col">
+                                    <span>{formatMoney(t.amount)}</span>
+                                    {t.discounts && t.discounts.length > 0 && (
+                                      <span className="text-[9px] text-purple-650 dark:text-purple-400 font-mono font-medium" title="Descuentos aplicados">
+                                        Desc: {t.discounts.map((d: any) => `${d.percentage}% (-${formatMoney(d.amount)})`).join(', ')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
                                 <td className="px-4 py-2.5 font-mono text-emerald-600 dark:text-emerald-400">+{formatMoney(tPaid)}</td>
                                 <td className="px-4 py-2.5">
                                   <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
@@ -877,31 +915,62 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     </div>
                   </div>
 
-                  {/* Right panel: List of Payments */}
-                  <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
-                    <div className="bg-slate-50 dark:bg-slate-800/40 p-3 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-850 dark:text-slate-200">Abonos Realizados</span>
-                      <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-semibold">
-                        {allPayments.length} abonos
-                      </span>
-                    </div>
-                    
-                    <div className="max-h-[300px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 p-4 space-y-2">
-                      {allPayments.length === 0 ? (
-                        <p className="text-center text-slate-400 text-xs py-8">No se han registrado abonos para este cliente.</p>
-                      ) : (
-                        allPayments.map((p, idx) => (
-                          <div key={idx} className="flex justify-between items-center text-xs py-1">
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{p.date}</span>
-                              <span className="text-[10px] text-slate-400">En cuenta ID: #{p.txId}</span>
+                  {/* Right panel: List of Payments & Discounts */}
+                  <div className="lg:col-span-5 space-y-4">
+                    {/* Payments */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                      <div className="bg-slate-50 dark:bg-slate-800/40 p-3 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-850 dark:text-slate-200">Abonos Realizados</span>
+                        <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-semibold">
+                          {allPayments.length} abonos
+                        </span>
+                      </div>
+                      
+                      <div className="max-h-[180px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 p-4 space-y-2">
+                        {allPayments.length === 0 ? (
+                          <p className="text-center text-slate-455 text-xs py-4">No se han registrado abonos para este cliente.</p>
+                        ) : (
+                          allPayments.map((p, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs py-1">
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDate(p.date)}</span>
+                                <span className="text-[10px] text-slate-400">En cuenta ID: #{p.txId}</span>
+                              </div>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">
+                                +{formatMoney(p.amount)}
+                              </span>
                             </div>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">
-                              +{formatMoney(p.amount)}
-                            </span>
-                          </div>
-                        ))
-                      )}
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Discounts */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                      <div className="bg-slate-50 dark:bg-slate-800/40 p-3 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-850 dark:text-slate-200">Descuentos Aplicados</span>
+                        <span className="text-[10px] bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded font-mono font-semibold">
+                          {allDiscounts.length} desc.
+                        </span>
+                      </div>
+                      
+                      <div className="max-h-[180px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 p-4 space-y-2">
+                        {allDiscounts.length === 0 ? (
+                          <p className="text-center text-slate-455 text-xs py-4">No se han registrado descuentos.</p>
+                        ) : (
+                          allDiscounts.map((d, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs py-1">
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDate(d.date)}</span>
+                                <span className="text-[10px] text-slate-400">En cuenta ID: #{d.txId} (Descuento {d.percentage}%)</span>
+                              </div>
+                              <span className="font-bold text-purple-600 dark:text-purple-400 font-mono text-sm">
+                                -{formatMoney(d.amount)}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
 

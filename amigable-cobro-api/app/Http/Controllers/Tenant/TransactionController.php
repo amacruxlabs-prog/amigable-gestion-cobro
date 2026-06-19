@@ -65,11 +65,23 @@ class TransactionController extends Controller
         $payments = DB::table('payments')->whereIn('transaction_id', $txIds)->get();
         $paymentsGrouped = $payments->groupBy('transaction_id');
 
+        // Obtener historial de descuentos para estas transacciones
+        $discounts = DB::table('discounts')->whereIn('transaction_id', $txIds)->get();
+        $discountsGrouped = $discounts->groupBy('transaction_id');
+
         foreach ($transactions->items() as $tx) {
             $tx->payments = $paymentsGrouped->get($tx->id, collect())->map(function($p) {
                 return [
                     'amount' => (float)$p->amount,
                     'date' => substr($p->created_at, 0, 10)
+                ];
+            })->toArray();
+
+            $tx->discounts = $discountsGrouped->get($tx->id, collect())->map(function($d) {
+                return [
+                    'percentage' => (float)$d->percentage,
+                    'amount' => (float)$d->amount,
+                    'date' => substr($d->created_at, 0, 10)
                 ];
             })->toArray();
         }
@@ -200,5 +212,75 @@ class TransactionController extends Controller
         return $this->successResponse([
             'transactions' => $transactions
         ], 'Datos del calendario');
+    }
+
+    public function applyDiscount(Request $request)
+    {
+        $request->validate([
+            'transaction_ids' => 'required|array',
+            'transaction_ids.*' => 'integer',
+            'percentage' => 'required|numeric|min:0.01|max:100',
+        ]);
+
+        $businessId = $this->getBusinessId();
+        if (!$businessId) {
+            return $this->errorResponse('Usuario no tiene un negocio asignado.', 'NO_BUSINESS', null, 403);
+        }
+
+        $txIds = $request->transaction_ids;
+        $pct = (float)$request->percentage;
+
+        try {
+            DB::beginTransaction();
+
+            $transactions = DB::table('transactions')
+                ->whereIn('id', $txIds)
+                ->where('business_id', $businessId)
+                ->get();
+
+            if ($transactions->isEmpty()) {
+                return $this->errorResponse('No se encontraron cuentas válidas para aplicar el descuento.', 'NO_TRANSACTIONS', null, 404);
+            }
+
+            foreach ($transactions as $tx) {
+                if ($tx->status === 'PAID') {
+                    continue;
+                }
+
+                $outstanding = max(0, $tx->total_amount - $tx->paid_amount);
+                $discountAmount = $outstanding * ($pct / 100);
+
+                if ($discountAmount <= 0) {
+                    continue;
+                }
+
+                $newTotalAmount = $tx->total_amount - $discountAmount;
+                $newStatus = $tx->paid_amount >= $newTotalAmount ? 'PAID' : 'PENDING';
+
+                DB::table('transactions')->where('id', $tx->id)->update([
+                    'total_amount' => $newTotalAmount,
+                    'status' => $newStatus,
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('discounts')->insert([
+                    'transaction_id' => $tx->id,
+                    'percentage' => $pct,
+                    'amount' => $discountAmount,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            Cache::forget("business_{$businessId}_dashboard");
+
+            return $this->successResponse(null, 'Descuentos masivos aplicados e históricos registrados exitosamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Error al aplicar descuentos masivos: ' . $e->getMessage(), 'DISCOUNT_ERROR', null, 500);
+        }
     }
 }

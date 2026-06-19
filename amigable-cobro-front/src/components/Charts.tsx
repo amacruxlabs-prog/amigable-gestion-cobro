@@ -1,12 +1,97 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction } from '../types';
+import { formatCurrency } from '../utils/format';
 import { Award, CalendarRange, PiggyBank, Calendar } from 'lucide-react';
 
 interface ChartsProps {
   transactions: Transaction[];
+  activeDetailsType?: 'emission' | 'ranking' | null;
+  setActiveDetailsType?: (type: 'emission' | 'ranking' | null) => void;
 }
 
-export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
+export const Charts: React.FC<ChartsProps> = ({ 
+  transactions, 
+  activeDetailsType, 
+  setActiveDetailsType
+}) => {
+  const [localActiveDetails, setLocalActiveDetails] = useState<'emission' | 'ranking' | null>(null);
+
+  useEffect(() => {
+    if (activeDetailsType !== undefined) {
+      setLocalActiveDetails(activeDetailsType);
+    }
+  }, [activeDetailsType]);
+
+  const activeType = localActiveDetails;
+  const setActiveType = (type: 'emission' | 'ranking' | null) => {
+    if (setActiveDetailsType) {
+      setActiveDetailsType(type);
+    } else {
+      setLocalActiveDetails(type);
+    }
+  };
+
+  // calculations for emission details
+  const fullTimelineData = useMemo(() => {
+    const dailyTotals: Record<string, { total: number; paid: number; receivable: number; count: number }> = {};
+    
+    transactions.forEach(t => {
+      const dateStr = t.date;
+      if (!dailyTotals[dateStr]) {
+        dailyTotals[dateStr] = { total: 0, paid: 0, receivable: 0, count: 0 };
+      }
+      
+      let currentPaid = t.status === 'Pagado' ? t.amount : (t.paidAmount || 0);
+
+      dailyTotals[dateStr].total += t.amount;
+      dailyTotals[dateStr].paid += currentPaid;
+      dailyTotals[dateStr].receivable += Math.max(0, t.amount - currentPaid);
+      dailyTotals[dateStr].count += 1;
+    });
+
+    const sortedDates = Object.keys(dailyTotals).sort((a, b) => {
+      return new Date(b).getTime() - new Date(a).getTime();
+    });
+
+    return sortedDates.map(date => ({
+      rawDate: date,
+      total: dailyTotals[date].total,
+      paid: dailyTotals[date].paid,
+      receivable: dailyTotals[date].receivable,
+      count: dailyTotals[date].count,
+    }));
+  }, [transactions]);
+
+
+
+  // calculations for client ranking details
+  const fullTopClients = useMemo(() => {
+    const clients: Record<string, { total: number; paid: number; receivable: number; count: number }> = {};
+
+    transactions.forEach(t => {
+      if (!clients[t.clientName]) {
+        clients[t.clientName] = { total: 0, paid: 0, receivable: 0, count: 0 };
+      }
+      
+      let currentPaid = t.status === 'Pagado' ? t.amount : (t.paidAmount || 0);
+
+      clients[t.clientName].total += t.amount;
+      clients[t.clientName].count += 1;
+      clients[t.clientName].paid += currentPaid;
+      clients[t.clientName].receivable += Math.max(0, t.amount - currentPaid);
+    });
+
+    return Object.keys(clients)
+      .map(name => ({
+        name,
+        total: clients[name].total,
+        count: clients[name].count,
+        paid: clients[name].paid,
+        receivable: clients[name].receivable,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [transactions]);
+
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
   // 1. Calculate Payment Status Distribution for Doughnut
@@ -118,7 +203,7 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
   }, [topClients]);
 
   const formatMoney = (val: number) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+    return formatCurrency(val);
   };
 
   // SVG parameters for doughnut
@@ -138,9 +223,18 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
               <CalendarRange className="text-indigo-650 w-5 h-5 dark:text-indigo-400" />
               Historial de Emisión (por Día de Operaciones)
             </h4>
-            <span className="text-[10px] uppercase font-bold py-1 px-2.5 bg-indigo-50 text-indigo-700 rounded-lg dark:bg-indigo-950/40 dark:text-indigo-300">
-              Últimos {timelineData.length} Días de Actividad
-            </span>
+            <div className="flex items-center gap-2">
+              <button 
+                type="button"
+                onClick={() => setActiveType('emission')}
+                className="text-xs font-bold text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline cursor-pointer mr-1"
+              >
+                Ver Detalles
+              </button>
+              <span className="text-[10px] uppercase font-bold py-1 px-2.5 bg-indigo-50 text-indigo-700 rounded-lg dark:bg-indigo-950/40 dark:text-indigo-300">
+                Últimos {timelineData.length} Días
+              </span>
+            </div>
           </div>
           <p className="text-xs text-slate-400 mb-6 font-sans dark:text-slate-500">
             Desglose acumulado de ingresos. Pasa el cursor sobre las barras para ver detalles de cuentas pagadas y pendientes.
@@ -256,10 +350,12 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
       {/* Payment Distribution Chart (Bento Card: spans 4 structural columns) */}
       <div className="lg:col-span-4 card flex flex-col justify-between dark:bg-slate-900 dark:border-slate-800">
         <div>
-          <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-1 dark:text-slate-100">
-            <PiggyBank className="text-indigo-650 w-5 h-5 dark:text-indigo-400" />
-            Estado Balance
-          </h4>
+          <div className="flex justify-between items-center mb-1">
+            <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 dark:text-slate-100">
+              <PiggyBank className="text-indigo-650 w-5 h-5 dark:text-indigo-400" />
+              Estado Balance
+            </h4>
+          </div>
           <p className="text-xs text-slate-400 mb-6 dark:text-slate-500">
             Proporción en monto total de cuotas pagadas frente a cuotas aún pendientes por recibir.
           </p>
@@ -336,10 +432,19 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
 
       {/* Leaderboard Section (Bento Card: Full 12 structural columns) */}
       <div className="lg:col-span-12 card dark:bg-slate-900 dark:border-slate-800">
-        <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-4 dark:text-slate-100">
-          <Award className="text-amber-500 w-5 h-5" />
-          Ranking de Clientes Clave (Mayor Frecuencia & Aporte)
-        </h4>
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-base font-bold text-slate-900 flex items-center gap-2 dark:text-slate-100">
+            <Award className="text-amber-500 w-5 h-5" />
+            Ranking de Clientes Clave (Mayor Frecuencia & Aporte)
+          </h4>
+          <button 
+            type="button"
+            onClick={() => setActiveType('ranking')}
+            className="text-xs font-bold text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline cursor-pointer"
+          >
+            Ver Ranking Completo
+          </button>
+        </div>
 
         {topClients.length === 0 ? (
           <p className="text-xs text-slate-400 py-4 text-center">No hay clientes suficientes.</p>
@@ -415,6 +520,144 @@ export const Charts: React.FC<ChartsProps> = ({ transactions }) => {
           </div>
         )}
       </div>
+
+      {/* DETAILS MODAL OVERLAY */}
+      {activeType && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[120] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up text-left">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-50 dark:bg-slate-800/40 p-4 border-b border-slate-100 dark:border-slate-850 flex justify-between items-center shrink-0">
+              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                {activeType === 'emission' && <>📊 Desglose de Historial de Emisión por Día</>}
+                {activeType === 'ranking' && <>🏆 Ranking Completo de Aportes de Clientes</>}
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setActiveType(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 hover:bg-slate-105 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+              >
+                <span className="text-sm font-bold">✕</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              
+              {/* EMISSION TYPE */}
+              {activeType === 'emission' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-slate-550 dark:text-slate-400 font-medium">
+                    Listado cronológico completo de las fechas en las que se registraron transacciones y sus respectivos balances.
+                  </p>
+                  <div className="overflow-x-auto border dark:border-slate-800 rounded-xl">
+                    <table className="w-full text-xs text-left whitespace-nowrap">
+                      <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 font-bold uppercase tracking-wider border-b dark:border-slate-800">
+                        <tr>
+                          <th className="px-4 py-3">Fecha</th>
+                          <th className="px-4 py-3 text-right">Monto Total</th>
+                          <th className="px-4 py-3 text-right">Monto Cobrado</th>
+                          <th className="px-4 py-3 text-right">Saldo Pendiente</th>
+                          <th className="px-4 py-3 text-center">Registros</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                        {fullTimelineData.map((d, i) => (
+                          <tr key={i} className="hover:bg-slate-550/50 dark:hover:bg-slate-800/20">
+                            <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                              {new Date(d.rawDate + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Caracas' })}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-slate-900 dark:text-slate-100 font-bold">
+                              {formatMoney(d.total)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                              +{formatMoney(d.paid)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-rose-650 dark:text-rose-400 font-bold">
+                              {formatMoney(d.receivable)}
+                            </td>
+                            <td className="px-4 py-3 text-center text-slate-450 font-mono">
+                              {d.count}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+
+
+              {/* RANKING TYPE */}
+              {activeType === 'ranking' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-slate-550 dark:text-slate-400 font-medium">
+                    Clasificación completa de todos los clientes de acuerdo con el volumen total de su facturación, abonos y deudas.
+                  </p>
+                  <div className="overflow-x-auto border dark:border-slate-800 rounded-xl">
+                    <table className="w-full text-xs text-left whitespace-nowrap">
+                      <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 font-bold uppercase tracking-wider border-b dark:border-slate-800">
+                        <tr>
+                          <th className="px-4 py-3 text-center">Puesto</th>
+                          <th className="px-4 py-3">Cliente</th>
+                          <th className="px-4 py-3 text-center">Cuentas</th>
+                          <th className="px-4 py-3 text-right">Volumen Facturado</th>
+                          <th className="px-4 py-3 text-right">Volumen Cobrado</th>
+                          <th className="px-4 py-3 text-right">Saldo Pendiente</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                        {fullTopClients.map((client, idx) => (
+                          <tr key={idx} className="hover:bg-slate-550/50 dark:hover:bg-slate-800/20">
+                            <td className="px-4 py-3 text-center">
+                              <span className={`w-6 h-6 inline-flex items-center justify-center font-mono font-bold rounded-lg text-xs ${
+                                idx === 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-955/20 dark:text-amber-300' :
+                                idx === 1 ? 'bg-slate-150 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
+                                idx === 2 ? 'bg-orange-100 text-orange-800 dark:bg-orange-955/20 dark:text-orange-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'
+                              }`}>
+                                {idx + 1}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
+                              {client.name}
+                            </td>
+                            <td className="px-4 py-3 text-center font-mono text-slate-500">
+                              {client.count}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-slate-900 dark:text-slate-100 font-bold">
+                              {formatMoney(client.total)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-emerald-650 dark:text-emerald-400 font-bold">
+                              +{formatMoney(client.paid)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-rose-650 dark:text-rose-450 font-bold">
+                              {formatMoney(client.receivable)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 dark:bg-slate-800/40 p-4 border-t border-slate-100 dark:border-slate-855 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveType(null)}
+                className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-sm transition-colors"
+              >
+                Cerrar Detalles
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

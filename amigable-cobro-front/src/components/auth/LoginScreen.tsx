@@ -145,29 +145,18 @@ export const LoginScreen = () => {
           </form>
           
           <div className="mt-8 pt-6 border-t" style={{ borderColor: 'var(--border-color)' }}>
-            <p className="text-xs text-center mb-3 font-semibold" style={{ color: 'var(--text-muted)' }}>Cuentas Demo Rápidas (Para Pruebas):</p>
-            <div className="grid grid-cols-2 gap-2">
+            <p className="text-xs text-center mb-3 font-semibold" style={{ color: 'var(--text-muted)' }}>Cuenta Demo Rápida (Para Pruebas):</p>
+            <div className="grid grid-cols-1">
               <button 
                 onClick={() => {
                   formik.setFieldValue('email', 'admin@amigablecobro.com');
                   formik.setFieldValue('password', 'password123');
                 }}
                 type="button"
-                className="py-2 px-3 text-xs font-semibold rounded transition-colors"
+                className="py-2 px-3 text-xs font-semibold rounded transition-colors cursor-pointer"
                 style={{ color: 'var(--color-brand)', background: 'var(--color-brand-light)' }}
               >
                 Super Admin
-              </button>
-              <button 
-                onClick={() => {
-                  formik.setFieldValue('email', 'test@example.com');
-                  formik.setFieldValue('password', 'password');
-                }}
-                type="button"
-                className="py-2 px-3 text-xs font-semibold rounded transition-colors"
-                style={{ color: '#06B6D4', background: 'rgba(6,182,212,0.1)' }}
-              >
-                Tenant (Negocio)
               </button>
             </div>
           </div>

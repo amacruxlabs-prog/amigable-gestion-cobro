@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatCurrency, formatDate } from './utils/format';
 import { MetricCard } from './components/MetricCard';
 import { Charts } from './components/Charts';
 import { SheetConnector } from './components/SheetConnector';
@@ -37,7 +38,6 @@ export default function App() {
     filteredTxsForKPIs,
     stats,
     handleDataLoadedBySync,
-    handleResetToDemo,
     handleUpdatePhone,
     handleToggleStatus,
     handleRegisterPayment,
@@ -53,6 +53,7 @@ export default function App() {
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isWhatsappOpen, setIsWhatsappOpen] = useState(false);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [activeDetailsType, setActiveDetailsType] = useState<'emission' | 'ranking' | null>(null);
   
   // (La redirección automática para el superadmin sin negocio ahora se maneja en las rutas más abajo)
 
@@ -224,11 +225,7 @@ export default function App() {
                           className="text-lg font-bold text-white"
                           style={{ fontFamily: 'var(--font-mono)' }}
                         >
-                          {new Intl.NumberFormat('es-CO', {
-                            style: 'currency',
-                            currency: 'COP',
-                            maximumFractionDigits: 0,
-                          }).format(stats.paidTotal)}
+                          {formatCurrency(stats.paidTotal)}
                         </p>
                       </div>
                     </div>
@@ -244,6 +241,7 @@ export default function App() {
                     type="total"
                     count={stats.salesCount}
                     subtext="Monto total en cuotas"
+                    onShowDetails={() => setActiveDetailsType('emission')}
                   />
                   <MetricCard
                     id="kpi-paid-accounts"
@@ -272,7 +270,11 @@ export default function App() {
 
                 {/* Charts */}
                 <section>
-                  <Charts transactions={filteredTxsForKPIs} />
+                  <Charts 
+                    transactions={filteredTxsForKPIs} 
+                    activeDetailsType={activeDetailsType}
+                    setActiveDetailsType={setActiveDetailsType}
+                  />
                 </section>
               </div>
             )}
@@ -323,10 +325,10 @@ export default function App() {
                         <span> · Estado: {filters.status}</span>
                       )}
                       {filters.startDate && (
-                        <span> · Desde: {filters.startDate}</span>
+                        <span> · Desde: {formatDate(filters.startDate)}</span>
                       )}
                       {filters.endDate && (
-                        <span> · Hasta: {filters.endDate}</span>
+                        <span> · Hasta: {formatDate(filters.endDate)}</span>
                       )}
                     </div>
                     <button
@@ -412,40 +414,7 @@ export default function App() {
                     activeSourceName={sourceName}
                   />
 
-                  {/* Demo reset — solo admins */}
-                  {isAdmin && (
-                    <div
-                      className="card"
-                      style={{
-                        borderColor: 'rgba(239,68,68,0.15)',
-                        background: 'var(--surface-card)',
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p
-                            className="text-sm font-bold mb-1"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            Restauración de Datos Demo
-                          </p>
-                          <p
-                            className="text-xs leading-relaxed"
-                            style={{ color: 'var(--text-muted)' }}
-                          >
-                            Reemplaza los datos actuales del servidor con el conjunto de datos de demostración. Esta acción es irreversible.
-                          </p>
-                        </div>
-                        <button
-                          onClick={handleResetToDemo}
-                          className="btn btn-danger flex-shrink-0"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Restaurar Demo</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
+
                 </div>
               </div>
             )}

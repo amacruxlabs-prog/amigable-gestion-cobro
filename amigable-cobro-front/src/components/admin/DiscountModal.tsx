@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatCurrency } from '../../utils/format';
 import { Transaction } from '../../types';
 import { X, Search } from 'lucide-react';
 
@@ -38,7 +39,7 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, t
   };
 
   const formatMoney = (val: number) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+    return formatCurrency(val);
   };
 
   const handleSubmit = async () => {

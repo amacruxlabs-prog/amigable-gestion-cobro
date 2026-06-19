@@ -1,18 +1,9 @@
-import express from 'express';
-import path from 'path';
-import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
-import 'dotenv/config';
+import re
 
-async function startServer() {
-  const app = express();
-  const PORT = process.env.PORT || 3003;
+with open('server.ts', 'r') as f:
+    content = f.read()
 
-  app.use(express.json({ limit: '50mb' }));
-
-  // Shared Gemini client setup on the server
-  // User-Agent: aistudio-build is mandatory for telemetry!
-
+get_ai_config_code = """
   const getAiConfig = async (req: express.Request) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -76,62 +67,11 @@ async function startServer() {
       throw new Error('Proveedor de IA no soportado: ' + config.provider);
     }
   };
+"""
 
-const uploadCache = new Map<string, { buffer: Buffer; mime: string }>();
+content = re.sub(r'  const getAiClient = \(\) => \{.*?\n  \};\n', get_ai_config_code, content, flags=re.DOTALL)
 
-  // Helper to generate IDs
-  const generateId = () => Math.random().toString(36).substring(2, 15);
-
-  app.post('/api/upload-image', (req, res) => {
-    try {
-      const { dataUrl } = req.body;
-      if (!dataUrl) {
-        return res.status(400).json({ error: 'No dataUrl provided' });
-      }
-
-      // dataUrl format: "data:image/png;base64,iVBORw0KGgo..."
-      const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (!matches || matches.length !== 3) {
-        return res.status(400).json({ error: 'Invalid dataUrl format' });
-      }
-
-      const mime = matches[1];
-      const buffer = Buffer.from(matches[2], 'base64');
-      const id = generateId();
-
-      // Only store temporarily
-      uploadCache.set(id, { buffer, mime });
-
-      // Clean up after 2 hours
-      setTimeout(() => {
-        uploadCache.delete(id);
-      }, 2 * 60 * 60 * 1000);
-
-      const host = req.get('host');
-      const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-      
-      const publicUrl = `${protocol}://${host}/img/${id}`;
-      return res.json({ url: publicUrl });
-    } catch (e) {
-      return res.status(500).json({ error: 'Upload failed' });
-    }
-  });
-
-  app.get('/img/:id', (req, res) => {
-    const file = uploadCache.get(req.params.id);
-    if (!file) {
-      return res.status(404).send('Image not found or expired');
-    }
-    
-    // For WhatsApp to preview it better, we can just return the raw image.
-    res.setHeader('Content-Type', file.mime);
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Let WhatsApp cache it
-    res.send(file.buffer);
-  });
-
-  // API router/endpoints
-  // 1. Audit / Analysis of current transactions
-
+verify_code = """
   app.get("/api/gemini/verify", async (req, res) => {
     try {
       const config = await getAiConfig(req);
@@ -140,8 +80,12 @@ const uploadCache = new Map<string, { buffer: Buffer; mime: string }>();
       res.status(401).json({ valid: false, error: error.message });
     }
   });
+"""
+
+content = re.sub(r'  app\.get\("/api/gemini/verify", async \(req, res\) => \{.*?\n  \}\);\n', verify_code, content, flags=re.DOTALL)
 
 
+analyze_code = """
   app.post('/api/gemini/analyze', async (req, res) => {
     try {
       const { transactions, customInstructions, tone } = req.body;
@@ -152,14 +96,7 @@ Instr. usuario: ${customInstructions || 'Ninguna'}.
 
 REGLA CRUCIAL: Responde de forma EXTREMADAMENTE corta, directa y minimalista para ahorrar la máxima cantidad de tokens posible. Omite saludos, introducciones, explicaciones largas o conclusiones. Ve directo al grano. Usa listas de viñetas muy breves.`;
 
-      const prompt = `Transacciones vigentes (JSON):
-${JSON.stringify(transactions, null, 2)}
-
-Genera un análisis ultracorto:
-1. Estado global (1 línea max).
-2. 3 socios urgentes (solo nombres y monto pendiente).
-3. 1 estrategia de cobro (1 línea).
-4. 1 beneficio corto sugerido.`;
+      const prompt = `Transacciones vigentes (JSON):\n${JSON.stringify(transactions, null, 2)}\n\nGenera un análisis ultracorto:\n1. Estado global (1 línea max).\n2. 3 socios urgentes (solo nombres y monto pendiente).\n3. 1 estrategia de cobro (1 línea).\n4. 1 beneficio corto sugerido.`;
 
       const text = await executeAiPrompt(config, prompt, systemInstruction);
       res.json({ analysis: text });
@@ -168,8 +105,10 @@ Genera un análisis ultracorto:
       res.status(500).json({ error: error.message });
     }
   });
+"""
+content = re.sub(r'  app\.post\(\'/api/gemini/analyze\', async \(req, res\) => \{.*?\n  \}\);\n', analyze_code, content, flags=re.DOTALL)
 
-
+chat_code = """
   // 2. Chat with the transactions context
   app.post('/api/gemini/chat', async (req, res) => {
     try {
@@ -183,15 +122,11 @@ Instr. especiales: ${customInstructions || 'Ninguna'}.
 REGLA CRUCIAL: Tus respuestas deben ser MUY BREVES, CLARAS Y DIRECTAS. Consume el menor número de tokens posible.
 No uses introducciones ni explicaciones largas.
 Si redactas un mensaje de WhatsApp, hazlo súper corto y usando placeholders como {{cliente}} o {{monto}}.
-Datos en vivo (llaves: c=cliente, a=monto original, p=monto pagado, s=estado):
-${JSON.stringify(transactions || [], null, 2)}`;
+Datos en vivo (llaves: c=cliente, a=monto original, p=monto pagado, s=estado):\n${JSON.stringify(transactions || [], null, 2)}`;
 
       let promptMessage = message;
       if (history && history.length > 0) {
-        promptMessage = `Historial de chat anterior:
-${history.map((h: any) => `${h.role === 'user' ? 'Usuario' : 'Agente'}: ${h.text}`).join('\\n')}
-
-Nueva pregunta del usuario: ${message}`;
+        promptMessage = `Historial de chat anterior:\n${history.map((h: any) => `${h.role === 'user' ? 'Usuario' : 'Agente'}: ${h.text}`).join('\n')}\n\nNueva pregunta del usuario: ${message}`;
       }
 
       const text = await executeAiPrompt(config, promptMessage, systemInstruction);
@@ -201,8 +136,11 @@ Nueva pregunta del usuario: ${message}`;
       res.status(500).json({ error: error.message });
     }
   });
+"""
+content = re.sub(r'  // 2\. Chat with the transactions context\n  app\.post\(\'/api/gemini/chat\', async \(req, res\) => \{.*?\n  \}\);\n', chat_code, content, flags=re.DOTALL)
 
 
+analyze_csv_code = """
   // 3. Analyze CSV File intelligent
   app.post('/api/gemini/analyze-csv', async (req, res) => {
     try {
@@ -219,9 +157,7 @@ REGLA CRUCIAL: Retorna ÚNICAMENTE un objeto JSON con la llave "transactions". C
 - date (YYYY-MM-DD)
 NO agregues markdown \`\`\`json. Solo el string crudo JSON. Ignora filas vacías.`;
 
-      const prompt = `Analiza este texto CSV y devuelve el JSON:
-
-${csvText.substring(0, 4000)}`;
+      const prompt = `Analiza este texto CSV y devuelve el JSON:\n\n${csvText.substring(0, 4000)}`;
 
       let text = await executeAiPrompt(config, prompt, systemInstruction);
       
@@ -235,25 +171,10 @@ ${csvText.substring(0, 4000)}`;
       res.status(500).json({ error: error.message });
     }
   });
+"""
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+# Insert analyze_csv_code right before Vite middleware
+content = content.replace("  // Vite middleware for development", analyze_csv_code + "\n  // Vite middleware for development")
 
-  app.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`Server is running at http://localhost:${PORT}`);
-  });
-}
-
-startServer();
+with open('server.ts', 'w') as f:
+    f.write(content)

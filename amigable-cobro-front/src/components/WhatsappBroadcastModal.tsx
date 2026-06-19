@@ -8,6 +8,7 @@ import {
 import { Transaction } from '../types';
 import { localDb } from '../lib/localDb';
 import { useUI } from '../contexts/UIContext';
+import { api } from '../lib/axios';
 import { useAuth } from '../contexts/AuthContext';
 
 interface WhatsappBroadcastModalProps {
@@ -83,7 +84,7 @@ export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       const targetBusinessId = businessId || 'demo-business-1';
-      const unsub = localDb.subscribeDoc('settings', targetBusinessId, (data) => {
+      const unsub = localDb.subscribeDoc('settings', String(targetBusinessId), (data) => {
         if (data && data.aiSuggestDiscount !== undefined) {
           setAutoDiscount(data.aiSuggestDiscount);
         }
@@ -168,12 +169,21 @@ export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({
     if (list.length === 0) { toast('Selecciona al menos un destinatario.', 'warning'); return; }
     const blankCount = list.filter(c => !c.phone).length;
     
-    const executeWizard = () => {
+    const executeWizard = async () => {
       const logs: Record<string, 'pending' | 'sent' | 'skipped'> = {};
       list.forEach(c => { logs[c.id] = 'pending'; });
       setWizardSendLogs(logs);
       setIsRunningWizard(true);
       setWizardIndex(0);
+      
+      try {
+        await api.post('/tenant/whatsapp/broadcast', {
+          message: messageBody,
+          audience: list.map(c => Number(c.id))
+        });
+      } catch (e) {
+        toast('Error al registrar logs en el servidor', 'error');
+      }
     };
 
     if (blankCount > 0) {
@@ -198,7 +208,7 @@ export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({
 
   const handleWizardAction = (action: 'send' | 'skip') => {
     if (!currentWizardTx) return;
-    const logs = { ...wizardSendLogs, [currentWizardTx.id]: action === 'send' ? 'sent' : 'skipped' };
+    const logs: Record<string, "pending" | "sent" | "skipped"> = { ...wizardSendLogs, [currentWizardTx.id]: action === 'send' ? 'sent' : 'skipped' };
     if (action === 'send') handleSendIndividual(currentWizardTx);
     setWizardSendLogs(logs);
     if (wizardIndex < selectedWizardClients.length - 1) {
@@ -489,7 +499,7 @@ export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({
                                     )}
                                     <button
                                       onClick={() => { setEditingPhoneTxId(tx.id); setTempPhoneVal(tx.phone || ''); }}
-                                      className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-[#06B6D4] p-1 rounded-md transition"
+                                      className="text-slate-400 hover:text-[#06B6D4] p-1 rounded-md transition cursor-pointer"
                                     >
                                       <Edit2 className="w-3 h-3" />
                                     </button>

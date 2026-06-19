@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Clock,
   LogOut,
@@ -30,9 +31,27 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   const { user, signOut, isSuperadmin, isAdmin } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
-  const [activeView, setActiveView] = useState<ViewType>('dashboard');
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const pathSegment = location.pathname.split('/')[2]; 
+  const isValidView = (v: any): v is ViewType => ['dashboard', 'calendar', 'accounts', 'sync', 'settings', 'team'].includes(v);
+  const activeView: ViewType = isValidView(pathSegment) ? pathSegment : 'dashboard';
+
+  React.useEffect(() => {
+    if (!isValidView(pathSegment)) {
+      navigate('/panel/dashboard', { replace: true });
+    }
+  }, [pathSegment, navigate]);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleViewChange = (v: ViewType) => {
+    navigate(`/panel/${v}`);
+    setMobileMenuOpen(false);
+  };
 
   // View labels for the topbar breadcrumb
   const VIEW_LABELS: Record<ViewType, string> = {
@@ -53,7 +72,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <div className="hidden md:flex">
         <Sidebar
           activeView={activeView}
-          onViewChange={(v) => { setActiveView(v); setMobileMenuOpen(false); }}
+          onViewChange={handleViewChange}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
         />
@@ -72,7 +91,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           >
             <Sidebar
               activeView={activeView}
-              onViewChange={(v) => { setActiveView(v); setMobileMenuOpen(false); }}
+              onViewChange={handleViewChange}
               isCollapsed={false}
               onToggleCollapse={() => setMobileMenuOpen(false)}
             />

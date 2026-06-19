@@ -1,19 +1,28 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { localAuth, localDb, User } from '../lib/localDb';
+import { api } from '../lib/axios';
 
-export type Role = 'SUPERADMIN' | 'TENANT_ADMIN' | 'VISOR' | null;
+export type Role = 'Administrador' | 'Admin Negocio' | 'Admin Local' | 'Lectura' | null;
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  business_id?: number | null;
+  roles?: { name: string }[];
+}
 
 interface AuthContextType {
   user: User | null;
   role: Role;
-  businessId: string | null;
+  businessId: number | null;
   loading: boolean;
-  signIn: (email?: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signIn: (email: string, password?: string) => Promise<void>;
+  signOut: () => void;
   isSuperadmin: boolean;
   isTenantAdmin: boolean;
   isAdmin: boolean;
   isVisor: boolean;
+  updateToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,11 +31,12 @@ const AuthContext = createContext<AuthContextType>({
   businessId: null,
   loading: true,
   signIn: async () => {},
-  signOut: async () => {},
+  signOut: () => {},
   isSuperadmin: false,
   isTenantAdmin: false,
   isAdmin: false,
   isVisor: false,
+  updateToken: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -34,64 +44,72 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role>(null);
-  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [businessId, setBusinessId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let unsubscribeRole: (() => void) | null = null;
-
-    const unsubscribeAuth = localAuth.onAuthStateChanged((localUser) => {
-      if (unsubscribeRole) {
-        unsubscribeRole();
-        unsubscribeRole = null;
-      }
-
-      setUser(localUser);
-      if (!localUser || !localUser.email) {
-        setRole(null);
-        setBusinessId(null);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const uid = localUser.uid;
+  const fetchUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      const userData = response.data.data;
+      setUser(userData);
       
-      unsubscribeRole = localDb.subscribeDoc('users', uid, (userData) => {
-        if (userData) {
-          setRole(userData.role as Role);
-          setBusinessId(userData.businessId || null);
-        } else {
-          // Initial superadmin fallback
-          if (localUser.email === 'amacruxlabs@gmail.com') {
-            setRole('SUPERADMIN');
-            setBusinessId(null);
-          } else {
-            setRole('TENANT_ADMIN');
-            setBusinessId('demo-business-1'); // Default fallback for mock tenant
-          }
-        }
-        setLoading(false);
-      });
-    });
-
-    return () => {
-      unsubscribeAuth();
-      if (unsubscribeRole) unsubscribeRole();
-    };
-  }, []);
-
-  const isSuperadmin = role === 'SUPERADMIN' || user?.email === 'amacruxlabs@gmail.com';
-  const isTenantAdmin = role === 'TENANT_ADMIN';
-  const isAdmin = isSuperadmin || isTenantAdmin;
-  const isVisor = role === 'VISOR';
-
-  const handleSignIn = async (email?: string) => {
-    localAuth.signIn(email || 'amacruxlabs@gmail.com');
+      // Mapear rol (suponiendo que Spatie devuelve un array en 'roles')
+      const userRoleName = userData.roles && userData.roles.length > 0 ? userData.roles[0].name : null;
+      setRole(userRoleName as Role);
+      setBusinessId(userData.business_id || null);
+    } catch (error) {
+      setUser(null);
+      setRole(null);
+      setBusinessId(null);
+      localStorage.removeItem('auth_token');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignOut = async () => {
-    localAuth.signOut();
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      fetchUser();
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const isSuperadmin = role === 'Administrador';
+  const isTenantAdmin = role === 'Admin Negocio' || role === 'Admin Local';
+  const isAdmin = isSuperadmin || isTenantAdmin;
+  const isVisor = role === 'Lectura';
+
+  const handleSignIn = async (email: string, password?: string) => {
+    // Quitamos setLoading(true) para no desmontar el LoginScreen y evitar el parpadeo
+    try {
+      // Si el backend es de prueba y no requiere clave o estamos emulando
+      const payload = password ? { email, password } : { email, password: 'password' };
+      const response = await api.post('/auth/login', payload);
+      
+      if (response.data?.data?.access_token) {
+        localStorage.setItem('auth_token', response.data.data.access_token);
+        // fetchUser() sí usará setLoading internamente, lo cual está bien si el login fue exitoso
+        await fetchUser();
+      }
+    } catch (error) {
+      throw error; // Propagamos para que el Formik capture
+    }
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('auth_token');
+    setUser(null);
+    setRole(null);
+    setBusinessId(null);
+    // Opcional: Avisar al backend para invalidar token
+    api.post('/auth/logout').catch(() => {});
+  };
+
+  const updateToken = async (newToken: string) => {
+    localStorage.setItem('auth_token', newToken);
+    await fetchUser();
   };
 
   return (
@@ -105,7 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isSuperadmin,
       isTenantAdmin,
       isAdmin,
-      isVisor
+      isVisor,
+      updateToken
     }}>
       {children}
     </AuthContext.Provider>

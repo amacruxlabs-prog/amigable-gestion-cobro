@@ -9,7 +9,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export type ViewType = 'dashboard' | 'calendar' | 'accounts' | 'sync' | 'settings' | 'team';
 
@@ -72,6 +74,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { signOut: logout } = useAuth();
+
   return (
     <aside
       className={`
@@ -230,6 +234,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <>
               <ChevronLeft className="w-4 h-4" />
               <span>Colapsar menú</span>
+            </>
+          )}
+        </button>
+        
+        <button
+          onClick={() => logout()}
+          title={isCollapsed ? 'Cerrar Sesión' : 'Cerrar Sesión'}
+          className={`
+            w-full flex items-center gap-2 px-3 py-2 mt-2 rounded-lg
+            text-xs font-semibold transition-all duration-150 cursor-pointer
+            ${isCollapsed ? 'justify-center' : ''}
+          `}
+          style={{ color: '#ef4444', background: 'transparent' }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'rgba(239, 68, 68, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'transparent';
+          }}
+        >
+          {isCollapsed ? (
+            <LogOut className="w-4 h-4" />
+          ) : (
+            <>
+              <LogOut className="w-4 h-4" />
+              <span>Cerrar Sesión</span>
             </>
           )}
         </button>

@@ -7,6 +7,7 @@ import {
 import { Transaction } from '../types';
 import { localDb } from '../lib/localDb';
 import { useUI } from '../contexts/UIContext';
+import { api } from '../lib/axios';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AiConfigDrawerProps {
@@ -32,19 +33,25 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
   const [autoAlertLargeDebts, setAutoAlertLargeDebts] = useState<boolean>(true);
   const [suggestEarlyDiscount, setSuggestEarlyDiscount] = useState<boolean>(true);
 
-  // Load from localDb
+  // Load from backend API
   useEffect(() => {
-    const targetBusinessId = businessId || 'demo-business-1';
-    const unsub = localDb.subscribeDoc('settings', targetBusinessId, (data) => {
-      if (data) {
-        if (data.aiTone) setTone(data.aiTone);
-        if (data.aiInstructions !== undefined) setCustomInstructions(data.aiInstructions);
-        if (data.aiAutoAlert !== undefined) setAutoAlertLargeDebts(data.aiAutoAlert);
-        if (data.aiSuggestDiscount !== undefined) setSuggestEarlyDiscount(data.aiSuggestDiscount);
+    if (!isOpen) return;
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/tenant/settings');
+        const data = response.data.data;
+        if (data) {
+          if (data.aiTone) setTone(data.aiTone);
+          if (data.aiInstructions !== undefined) setCustomInstructions(data.aiInstructions);
+          if (data.aiAutoAlert !== undefined) setAutoAlertLargeDebts(data.aiAutoAlert);
+          if (data.aiSuggestDiscount !== undefined) setSuggestEarlyDiscount(data.aiSuggestDiscount);
+        }
+      } catch (e) {
+        console.error('Error fetching settings from API', e);
       }
-    });
-    return () => unsub();
-  }, [businessId]);
+    };
+    fetchSettings();
+  }, [isOpen]);
 
   // Chat state
   const [chatInput, setChatInput] = useState('');
@@ -81,12 +88,13 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
   // Persist settings
   const handleSaveSettings = async () => {
     try {
-      const targetBusinessId = businessId || 'demo-business-1';
-      localDb.setDoc('settings', targetBusinessId, {
-        aiTone: tone,
-        aiInstructions: customInstructions,
-        aiAutoAlert: autoAlertLargeDebts,
-        aiSuggestDiscount: suggestEarlyDiscount
+      await api.put('/tenant/settings', {
+        settings: {
+          aiTone: tone,
+          aiInstructions: customInstructions,
+          aiAutoAlert: autoAlertLargeDebts,
+          aiSuggestDiscount: suggestEarlyDiscount
+        }
       });
       
       setShowSavedFeedback(true);
@@ -94,7 +102,8 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
         setShowSavedFeedback(false);
       }, 2000);
     } catch (e) {
-      console.error("Error saving global settings", e);
+      console.error("Error saving settings to API", e);
+      toast('Error al guardar la configuración', 'error');
     }
   };
 
@@ -113,7 +122,7 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
             timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
           }
         ];
-        setMessages(initial);
+        setMessages(initial as ChatMessage[]);
         localStorage.setItem('resto_ai_chat_history', JSON.stringify(initial));
         toast('Historial limpiado', 'success');
       }
@@ -159,7 +168,10 @@ export const AiConfigDrawer: React.FC<AiConfigDrawerProps> = ({ isOpen, onClose,
 
       const response = await fetch('/api/gemini/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
         body: JSON.stringify({
           message: queryText,
           history: messages.slice(-10), // Send last 10 messages for context

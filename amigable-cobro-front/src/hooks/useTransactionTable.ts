@@ -6,6 +6,9 @@ interface UseTransactionTableProps {
   onAddTransaction: (newTx: Omit<Transaction, 'id'>) => void;
   filter: FilterState;
   onFilterChange: (newFilter: FilterState) => void;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function useTransactionTable({
@@ -13,9 +16,11 @@ export function useTransactionTable({
   onAddTransaction,
   filter,
   onFilterChange,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange
 }: UseTransactionTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   // Manual transaction form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -36,35 +41,14 @@ export function useTransactionTable({
   const [inlineAbonoErr, setInlineAbonoErr] = useState<string>('');
   const [showHistoryTxId, setShowHistoryTxId] = useState<string | null>(null);
 
-  // 1. Filter Transactions based on search, status, and dates
-  const filteredTransactions = transactions.filter((t) => {
-    const searchTerm = filter.searchTerm.toLowerCase();
-    const matchesSearch =
-      (t.clientName || '').toLowerCase().includes(searchTerm) ||
-      (t.cedula && t.cedula.toLowerCase().includes(searchTerm));
-    
-    const matchesStatus = filter.status === 'todos' || t.status === filter.status;
-
-    let matchesStartDate = true;
-    let matchesEndDate = true;
-    if (filter.startDate) {
-      matchesStartDate = t.date >= filter.startDate;
-    }
-    if (filter.endDate) {
-      matchesEndDate = t.date <= filter.endDate;
-    }
-
-    return matchesSearch && matchesStatus && matchesStartDate && matchesEndDate;
-  });
-
-  // Calculate pages
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  // Backend already filters and paginates
+  const filteredTransactions = transactions;
+  const paginatedTransactions = transactions;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+    if (onPageChange) {
+      onPageChange(newPage);
     }
   };
 
@@ -73,7 +57,7 @@ export function useTransactionTable({
       ...filter,
       ...updates,
     });
-    setCurrentPage(1); // Back to page 1 on filter
+    if (onPageChange) onPageChange(1);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {

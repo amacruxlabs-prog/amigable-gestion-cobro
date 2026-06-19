@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { ColumnMapping } from '../types';
-import { Link2, Upload, FileSpreadsheet, CheckCircle, AlertTriangle, RefreshCw, HelpCircle, Columns } from 'lucide-react';
-import { extractSpreadsheetId, convertCsvToTransactions } from '../utils/csvParser';
+import { Link2, Upload, FileSpreadsheet, CheckCircle, AlertTriangle, RefreshCw, HelpCircle, Columns, Bot, Save, X, Edit3, Download } from 'lucide-react';
+import { extractSpreadsheetId } from '../utils/csvParser';
+import { api } from '../lib/axios';
+import { useUI } from '../contexts/UIContext';
+import { Transaction } from '../types';
 
 interface SheetConnectorProps {
   onDataLoaded: (data: {
@@ -28,6 +31,112 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showHelper, setShowHelper] = useState(false);
+  const [importStats, setImportStats] = useState<{ imported: number, errors: number } | null>(null);
+
+  // Preview States
+  const [previewTransactions, setPreviewTransactions] = useState<Transaction[] | null>(null);
+  const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
+  const [previewMapping, setPreviewMapping] = useState<ColumnMapping | null>(null);
+  const [previewSourceName, setPreviewSourceName] = useState<string>('');
+
+  const checkAICredentials = async (): Promise<boolean> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/gemini/verify', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        throw new Error('No autorizado');
+      }
+      return true;
+    } catch (error) {
+      setErrorMsg('No se encontraron credenciales de IA. Por favor configura tu API Key de Gemini en la sección de Ajustes > Secretos.');
+      return false;
+    }
+  };
+
+  const processWithAI = async (csvText: string, sourceName: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/gemini/analyze-csv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ csvText })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al procesar el archivo con IA');
+      }
+
+      if (data.transactions && Array.isArray(data.transactions)) {
+        setPreviewHeaders(['IA Parsing']); // Simplified since AI mapped it
+        setPreviewMapping(null);
+        setPreviewSourceName(sourceName);
+        setPreviewTransactions(data.transactions);
+      } else {
+        throw new Error('La IA no devolvió un formato válido de transacciones.');
+      }
+    } catch (error: any) {
+      setErrorMsg(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const headers = ['Nombre del Cliente', 'Cedula', 'Telefono', 'Monto', 'Estado', 'Fecha'];
+    const example1 = ['Juan Perez', 'V-12345678', '04141234567', '150.50', 'Pendiente', '2024-01-15'];
+    const example2 = ['Maria Gomez', 'V-87654321', '04247654321', '80.00', 'Pagado', '2024-01-10'];
+    
+    const csvContent = [
+      headers.join(','),
+      example1.join(','),
+      example2.join(',')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'plantilla_importacion_clientes.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const importToBackend = async (transactions: any[], headers: string[], mapping: ColumnMapping, sourceName: string) => {
+    try {
+      setLoading(true);
+      const payload = transactions.map(t => ({
+        client_name: t.clientName,
+        client_document: t.cedula,
+        client_phone: t.phone,
+        total_amount: t.amount,
+        paid_amount: t.paidAmount || 0,
+        status: t.status === 'Pagado' ? 'PAID' : 'PENDING',
+        date: t.date
+      }));
+
+      const response = await api.post('/tenant/sync/import', { transactions: payload });
+      const { imported, errors } = response.data.data;
+      
+      setImportStats({ imported, errors });
+      setSuccessMsg(`Importación finalizada en la base de datos. Exitosos: ${imported}, Errores: ${errors}.`);
+      setPreviewTransactions(null);
+      
+      // Llamamos a onDataLoaded para que la tabla principal recargue los datos del backend
+      onDataLoaded({ transactions: [], headers, mapping, sourceName });
+      
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.message || 'Error al importar datos en el servidor.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Direct file drag and drop helper states
   const [isDragging, setIsDragging] = useState(false);
@@ -75,15 +184,14 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
           stats.bandwidthSavedKb = (stats.bandwidthSavedKb || 0) + Math.round((cached.csvText?.length || 20480) / 1024);
           localStorage.setItem('rest_opt_cache_stats', JSON.stringify(stats));
 
-          onDataLoaded({
-            transactions: cached.transactions,
-            headers: cached.headers,
-            mapping: cached.mapping,
-            sourceName: `Google Sheet (Caché): ${spreadsheetId.substring(0, 8)}...`
-          });
+          
+          const hasAI = await checkAICredentials();
+          if (!hasAI) return;
+          setPreviewHeaders(cached.headers);
+          setPreviewMapping(cached.mapping);
+          setPreviewSourceName(`Google Sheet (Caché): ${spreadsheetId.substring(0, 8)}...`);
+          setPreviewTransactions(cached.transactions);
 
-          setSuccessMsg(`🚀 ¡Sincronizado de Caché (TTL activo)! Se cargaron ${cached.transactions.length} filas al instante.`);
-          setLoading(false);
           return;
         }
       } catch (e) {
@@ -102,44 +210,14 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
         throw new Error('La hoja de cálculo regresó un archivo CSV vacío.');
       }
 
-      const { transactions, headers, detectedMapping } = convertCsvToTransactions(csvText);
-
-      if (transactions.length === 0) {
-        throw new Error('No pudimos encontrar filas válidas de transacciones en la hoja cargada.');
+      const hasAI = await checkAICredentials();
+      if (!hasAI) {
+        setLoading(false);
+        return;
       }
+      
+      await processWithAI(csvText, `Google Sheet: ${spreadsheetId.substring(0, 8)}...`);
 
-      // Save to cache if enabled
-      if (cacheEnabledSetting) {
-        try {
-          localStorage.setItem(`sheet_cache_${spreadsheetId}`, JSON.stringify({
-            timestamp: Date.now(),
-            transactions,
-            headers,
-            mapping: detectedMapping,
-            csvText
-          }));
-        } catch (e) {
-          console.error('Error saving API cache', e);
-        }
-      }
-
-      // Update cache stats (misses)
-      let stats = { hits: 0, misses: 0, timeSavedMs: 0, bandwidthSavedKb: 0 };
-      const savedStats = localStorage.getItem('rest_opt_cache_stats');
-      if (savedStats) {
-        try { stats = JSON.parse(savedStats); } catch (e) {}
-      }
-      stats.misses = (stats.misses || 0) + 1;
-      localStorage.setItem('rest_opt_cache_stats', JSON.stringify(stats));
-
-      onDataLoaded({
-        transactions,
-        headers,
-        mapping: detectedMapping,
-        sourceName: `Google Sheet: ${spreadsheetId.substring(0, 8)}...`
-      });
-
-      setSuccessMsg(`¡Sincronizado con éxito! Cargadas ${transactions.length} filas desde la hoja en tiempo real.`);
     } catch (err: any) {
       console.error(err);
       setErrorMsg(
@@ -187,21 +265,13 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
   const processCsvFile = (file: File) => {
     setLoading(true);
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const text = event.target?.result as string;
       try {
-        const { transactions, headers, detectedMapping } = convertCsvToTransactions(text);
-        if (transactions.length === 0) {
-          throw new Error('No se encontraron transacciones en el archivo CSV.');
-        }
-
-        onDataLoaded({
-          transactions,
-          headers,
-          mapping: detectedMapping,
-          sourceName: `Archivo CSV: ${file.name}`
-        });
-        setSuccessMsg(`¡Archivo importado con éxito! Se cargaron ${transactions.length} transacciones.`);
+        const hasAI = await checkAICredentials();
+        if (!hasAI) { setLoading(false); return; }
+        
+        await processWithAI(text, `Archivo CSV: ${file.name}`);
       } catch (err: any) {
         setErrorMsg(`Error al analizar el CSV: ${err.message}`);
       } finally {
@@ -216,7 +286,7 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
   };
 
   // Direct Raw CSV Paste Sync
-  const handlePasteSync = () => {
+  const handlePasteSync = async () => {
     if (!pastedCsv.trim()) {
       setErrorMsg('Ingresa texto CSV o renglones copiados de tu tabla.');
       return;
@@ -227,18 +297,10 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
     setSuccessMsg(null);
 
     try {
-      const { transactions, headers, detectedMapping } = convertCsvToTransactions(pastedCsv);
-      if (transactions.length === 0) {
-        throw new Error('No se encontraron filas con datos en el contenido provisto.');
-      }
-
-      onDataLoaded({
-        transactions,
-        headers,
-        mapping: detectedMapping,
-        sourceName: 'Texto CSV Pegado'
-      });
-      setSuccessMsg(`¡Cargado con éxito! ${transactions.length} filas mapeadas.`);
+      const hasAI = await checkAICredentials();
+      if (!hasAI) { setLoading(false); return; }
+      
+      await processWithAI(pastedCsv, 'Texto CSV Pegado');
     } catch (err: any) {
       setErrorMsg(`Error al analizar texto pegado: ${err.message}`);
     } finally {
@@ -382,6 +444,17 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
                 <p className="text-[10px] text-slate-400 dark:text-slate-500">Solo formato CSV (.csv) con codificación UTF-8</p>
               </label>
             </div>
+            
+            <div className="mt-4 flex justify-between items-center text-sm text-slate-500 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+              <span>Formatos soportados: .csv (hasta 5MB)</span>
+              <button 
+                onClick={downloadTemplate}
+                className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Descargar plantilla CSV
+              </button>
+            </div>
           </div>
         )}
 
@@ -426,6 +499,152 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
           {activeSourceName}
         </span>
       </div>
+
+      
+      {/* Preview Table Segment as Modal */}
+      {previewTransactions && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-5 border-b border-slate-150 dark:border-slate-800 flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
+                  <Bot className="w-5 h-5 text-indigo-500 animate-pulse" /> 
+                  Vista Previa del Análisis Inteligente
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Revisa y edita los datos antes de guardarlos. Origen: <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 dark:bg-slate-800 dark:text-slate-300">{previewSourceName}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewTransactions(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-155 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body (Scrollable Table) */}
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 sticky top-0 z-10 text-xs uppercase">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Cliente</th>
+                      <th className="px-4 py-3 font-semibold">Cédula</th>
+                      <th className="px-4 py-3 font-semibold">Teléfono</th>
+                      <th className="px-4 py-3 font-semibold">Monto</th>
+                      <th className="px-4 py-3 font-semibold">Estado</th>
+                      <th className="px-4 py-3 font-semibold">Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {previewTransactions.map((tx, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="px-4 py-2">
+                          <input 
+                            type="text" 
+                            value={tx.clientName} 
+                            onChange={e => {
+                              const newTxs = [...previewTransactions];
+                              newTxs[idx].clientName = e.target.value;
+                              setPreviewTransactions(newTxs);
+                            }}
+                            className="bg-transparent border-b border-transparent focus:border-indigo-400 outline-none w-full text-slate-700 dark:text-slate-200"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input 
+                            type="text" 
+                            value={tx.cedula || ''} 
+                            onChange={e => {
+                              const newTxs = [...previewTransactions];
+                              newTxs[idx].cedula = e.target.value;
+                              setPreviewTransactions(newTxs);
+                            }}
+                            className="bg-transparent border-b border-transparent focus:border-indigo-400 outline-none w-24 text-slate-700 dark:text-slate-200"
+                            placeholder="Vacio"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input 
+                            type="text" 
+                            value={tx.phone || ''} 
+                            onChange={e => {
+                              const newTxs = [...previewTransactions];
+                              newTxs[idx].phone = e.target.value;
+                              setPreviewTransactions(newTxs);
+                            }}
+                            className="bg-transparent border-b border-transparent focus:border-indigo-400 outline-none w-28 text-slate-700 dark:text-slate-200"
+                            placeholder="Vacio"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input 
+                            type="number" 
+                            value={tx.amount || 0} 
+                            onChange={e => {
+                              const newTxs = [...previewTransactions];
+                              newTxs[idx].amount = Number(e.target.value);
+                              setPreviewTransactions(newTxs);
+                            }}
+                            className={`bg-transparent border-b border-transparent focus:border-indigo-400 outline-none w-24 font-mono font-medium ${tx.amount === 0 ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <select 
+                            value={tx.status}
+                            onChange={e => {
+                              const newTxs = [...previewTransactions];
+                              newTxs[idx].status = e.target.value as any;
+                              setPreviewTransactions(newTxs);
+                            }}
+                            className={`bg-transparent outline-none cursor-pointer text-xs font-bold ${tx.status === 'Pagado' ? 'text-emerald-600' : 'text-amber-600'}`}
+                          >
+                            <option value="Cobrar">Pendiente</option>
+                            <option value="Pagado">Pagado</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-2">
+                          <input 
+                            type="date" 
+                            value={tx.date || ''} 
+                            onChange={e => {
+                              const newTxs = [...previewTransactions];
+                              newTxs[idx].date = e.target.value;
+                              setPreviewTransactions(newTxs);
+                            }}
+                            className={`bg-transparent border-b border-transparent focus:border-indigo-400 outline-none w-32 ${!tx.date ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-150 dark:border-slate-800 flex justify-end gap-3">
+              <button 
+                onClick={() => setPreviewTransactions(null)} 
+                className="btn bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+              >
+                <X className="w-4.5 h-4.5 mr-1.5 inline" /> Cancelar
+              </button>
+              <button 
+                onClick={() => importToBackend(previewTransactions, previewHeaders, previewMapping!, previewSourceName)}
+                className="btn bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md cursor-pointer"
+              >
+                <Save className="w-4.5 h-4.5 mr-1.5 inline" /> Confirmar y Generar Deudas
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Custom Column Mapper Segment */}
       {availableHeaders.length > 0 && (

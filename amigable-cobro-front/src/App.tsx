@@ -11,6 +11,7 @@ import { SuperadminPanel } from './components/admin/SuperadminPanel';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { AppLayout, NoPemissionsScreen } from './components/layout/AppLayout';
 import { TeamPanel } from './components/team/TeamPanel';
+import { SettingsPanel } from './components/settings/SettingsPanel';
 import { useAuth } from './contexts/AuthContext';
 import { useTransactions } from './hooks/useTransactions';
 import {
@@ -21,8 +22,11 @@ import {
   Link2,
 } from 'lucide-react';
 
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { api } from './lib/axios';
+
 export default function App() {
-  const { user, loading: authLoading, isSuperadmin, isAdmin, isVisor } = useAuth();
+  const { user, loading: authLoading, isSuperadmin, isAdmin, isVisor, updateToken } = useAuth();
   const {
     transactions,
     availableHeaders,
@@ -40,13 +44,17 @@ export default function App() {
     handleDeleteTransaction,
     handleAddTransaction,
     handleApplyDiscount,
+    currentPage,
+    setCurrentPage,
+    totalPages,
   } = useTransactions();
 
   const [currentTime, setCurrentTime] = useState('');
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isWhatsappOpen, setIsWhatsappOpen] = useState(false);
-  const [isSuperadminOpen, setIsSuperadminOpen] = useState(false);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  
+  // (La redirección automática para el superadmin sin negocio ahora se maneja en las rutas más abajo)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -72,19 +80,86 @@ export default function App() {
         Cargando identidad segura...
       </div>
     );
-  if (!user) return <LoginScreen />;
+    
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Si el usuario no tiene permisos válidos
   if (!isVisor && !isAdmin && !isSuperadmin) return <NoPemissionsScreen />;
 
+  // CASO DE USO 1.1: Superadmin sin negocio asignado
+  const isOrphanSuperadmin = isSuperadmin && !user.business_id;
+
+  if (isOrphanSuperadmin) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/superadmin/*" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/*" element={<SuperadminPanel onClose={() => {}} />} />
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      </Routes>
+    );
+  }
+
+  // Flujo normal para usuarios con negocio
+  const isImpersonating = isSuperadmin && user?.business_id !== null;
+
+  const handleExitImpersonation = async () => {
+    try {
+      const response = await api.post('/superadmin/impersonate', { business_id: null });
+      if (response.data?.data?.token) {
+        await updateToken(response.data.data.token);
+        window.location.href = '/admin/dashboard';
+      }
+    } catch (error) {
+      console.error("Error exiting impersonation", error);
+    }
+  };
+
   return (
-    <>
-      <AppLayout
-        currentTime={currentTime}
-        onOpenAi={() => setIsAiOpen(true)}
-        onOpenWhatsapp={() => setIsWhatsappOpen(true)}
-        onOpenSuperadmin={() => setIsSuperadminOpen(true)}
-      >
+    <Routes>
+      <Route path="/login" element={<Navigate to="/panel/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/panel/dashboard" replace />} />
+      
+      {/* Rutas de Superadmin */}
+      <Route path="/admin/*" element={
+        isSuperadmin ? <SuperadminPanel onClose={() => window.location.href = '/panel/dashboard'} /> : <Navigate to="/panel/dashboard" replace />
+      } />
+
+      {/* Legacy /superadmin redirect */}
+      <Route path="/superadmin/*" element={<Navigate to="/admin/dashboard" replace />} />
+
+      {/* Rutas principales del tenant */}
+      <Route path="/panel/*" element={
+        <>
+          <AppLayout
+            currentTime={currentTime}
+            onOpenAi={() => setIsAiOpen(true)}
+            onOpenWhatsapp={() => setIsWhatsappOpen(true)}
+            onOpenSuperadmin={() => window.location.href = '/admin/dashboard'}
+          >
         {(activeView) => (
-          <div className="h-full">
+          <div className="h-full relative">
+            {/* --- IMPERSONATION BANNER --- */}
+            {isImpersonating && (
+              <div className="w-full bg-orange-500 text-white px-4 py-2 flex items-center justify-center gap-3 shadow-md z-40 relative">
+                <span className="font-bold text-sm">Estás explorando la plataforma en nombre de un negocio (Impersonación)</span>
+                <button 
+                  onClick={handleExitImpersonation}
+                  className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-xs font-bold transition-colors border border-white/40"
+                >
+                  Finalizar Sesión como Negocio
+                </button>
+              </div>
+            )}
+            
             {/* ══════════════════════════════════════
                 VISTA: DASHBOARD
                 KPIs + Gráficos
@@ -282,6 +357,9 @@ export default function App() {
                   onFilterChange={setFilters}
                   isSuperadmin={isSuperadmin}
                   onShowDiscountModal={() => setIsDiscountModalOpen(true)}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
                 />
               </div>
             )}
@@ -372,57 +450,7 @@ export default function App() {
                 VISTA: CONFIGURACIÓN
             ══════════════════════════════════════ */}
             {activeView === 'settings' && (
-              <div className="p-6 space-y-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <div
-                      className="w-8 h-8 flex items-center justify-center rounded-lg"
-                      style={{ background: 'var(--color-brand-light)' }}
-                    >
-                      <Settings
-                        className="w-4 h-4"
-                        style={{ color: 'var(--color-brand)' }}
-                      />
-                    </div>
-                    <h2
-                      className="text-xl font-bold"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      Configuración del Negocio
-                    </h2>
-                  </div>
-                  <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-                    Ajustes y preferencias del negocio actual.
-                  </p>
-                </div>
-
-                <div
-                  className="card max-w-2xl flex flex-col items-center justify-center py-16 text-center"
-                  style={{ borderStyle: 'dashed' }}
-                >
-                  <div
-                    className="w-14 h-14 flex items-center justify-center rounded-xl mb-4"
-                    style={{ background: 'var(--color-brand-light)' }}
-                  >
-                    <DollarSign
-                      className="w-6 h-6"
-                      style={{ color: 'var(--color-brand)' }}
-                    />
-                  </div>
-                  <h3
-                    className="text-base font-bold mb-2"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    Configuración disponible próximamente
-                  </h3>
-                  <p
-                    className="text-sm max-w-xs leading-relaxed"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    Aquí podrás ajustar los parámetros del negocio una vez conectado con el backend.
-                  </p>
-                </div>
-              </div>
+              <SettingsPanel />
             )}
           </div>
         )}
@@ -446,9 +474,10 @@ export default function App() {
         transactions={transactions}
         onApplyDiscount={handleApplyDiscount}
       />
-      {isSuperadmin && isSuperadminOpen && (
-        <SuperadminPanel onClose={() => setIsSuperadminOpen(false)} />
-      )}
-    </>
+        </>
+      } />
+
+      <Route path="*" element={<Navigate to="/panel/dashboard" replace />} />
+    </Routes>
   );
 }

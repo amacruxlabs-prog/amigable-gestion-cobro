@@ -35,6 +35,7 @@ use App\Http\Controllers\Tenant\AnalyticsController;
 use App\Http\Controllers\Tenant\WhatsAppController;
 use App\Http\Controllers\Tenant\SyncController;
 use App\Http\Controllers\Tenant\SettingsController;
+use App\Http\Controllers\Tenant\UserController;
 
 Route::group([
     'prefix' => 'tenant', 
@@ -52,6 +53,13 @@ Route::group([
         }
     ]
 ], function () {
+    Route::get('users', [UserController::class, 'index']);
+    Route::post('users', [UserController::class, 'store']);
+    Route::put('users/{id}', [UserController::class, 'update']);
+    Route::put('users/{id}/status', [UserController::class, 'toggleStatus']);
+    Route::put('users/{id}/password', [UserController::class, 'updatePassword']);
+    Route::delete('users/{id}', [UserController::class, 'destroy']);
+    
     Route::post('whatsapp/broadcast', [WhatsAppController::class, 'broadcast']);
     Route::post('sync/import', [SyncController::class, 'import']);
     Route::get('settings', [SettingsController::class, 'index']);

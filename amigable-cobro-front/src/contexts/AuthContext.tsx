@@ -135,13 +135,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem('auth_token');
-    setUser(null);
-    setRole(null);
-    setBusinessId(null);
-    // Opcional: Avisar al backend para invalidar token
-    api.post('/auth/logout').catch(() => {});
+  const handleSignOut = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (err) {
+      // Ignore errors on logout
+    } finally {
+      localStorage.removeItem('auth_token');
+      setUser(null);
+      setRole(null);
+      setBusinessId(null);
+    }
   };
 
   const updateToken = async (newToken: string) => {

@@ -153,10 +153,11 @@ export const LoginScreen = () => {
                   formik.setFieldValue('password', 'password123');
                 }}
                 type="button"
-                className="py-2 px-3 text-xs font-semibold rounded transition-colors cursor-pointer"
-                style={{ color: 'var(--color-brand)', background: 'var(--color-brand-light)' }}
+                className="py-2.5 px-4 text-sm font-bold rounded-lg shadow-md transition-all hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 mx-auto"
+                style={{ color: '#ffffff', background: 'linear-gradient(135deg, #4f46e5, #4338ca)' }}
               >
-                Super Admin
+                <ShieldCheck className="w-4 h-4" />
+                Rellenar credenciales de Súper Admin
               </button>
             </div>
           </div>

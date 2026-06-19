@@ -55,8 +55,8 @@ class BusinessController extends Controller
                 ]);
 
                 $user = \App\Models\User::find($userId);
-                if ($user && \Spatie\Permission\Models\Role::where('name', 'tenant-admin')->exists()) {
-                    $user->assignRole('tenant-admin');
+                if ($user && \Spatie\Permission\Models\Role::where('name', 'Admin Negocio')->exists()) {
+                    $user->assignRole('Admin Negocio');
                 }
             }
 
@@ -141,7 +141,15 @@ class BusinessController extends Controller
         $totalAmount = DB::table('transactions')->where('business_id', $id)->sum('total_amount') ?: 0;
         $totalPaid = DB::table('transactions')->where('business_id', $id)->sum('paid_amount') ?: 0;
         $totalOutstanding = max(0, $totalAmount - $totalPaid);
-        $usersCount = DB::table('users')->where('business_id', $id)->count();
+        // Excluir a los super admins del conteo de usuarios y de la lista
+        $usersCount = DB::table('users')
+            ->where('business_id', $id)
+            ->whereNotIn('id', function($q) {
+                $q->select('model_id')->from('model_has_roles')
+                  ->join('roles', 'role_id', '=', 'roles.id')
+                  ->where('roles.name', 'Administrador');
+            })
+            ->count();
 
         // Cuántos deudores (clientes únicos con saldo pendiente)
         $debtorsCount = DB::table('transactions')
@@ -150,9 +158,14 @@ class BusinessController extends Controller
             ->distinct()
             ->count('client_name');
 
-        // Obtener los usuarios del negocio (nombre, email)
+        // Obtener los usuarios del negocio (nombre, email) excluyendo Súper Admins
         $users = DB::table('users')
             ->where('business_id', $id)
+            ->whereNotIn('id', function($q) {
+                $q->select('model_id')->from('model_has_roles')
+                  ->join('roles', 'role_id', '=', 'roles.id')
+                  ->where('roles.name', 'Administrador');
+            })
             ->select('id', 'name', 'email', 'created_at')
             ->get();
 

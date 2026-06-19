@@ -113,7 +113,7 @@ api.interceptors.response.use(
         // Si falló login o refresh, o si es un 401 que ya reintentamos
         if (originalRequest.url?.includes('/auth/login')) {
           globalAlert(data.message || 'Credenciales inválidas.', 'Acceso Denegado', 'danger');
-        } else {
+        } else if (!originalRequest.url?.includes('/auth/logout')) {
           localStorage.removeItem('auth_token');
           window.dispatchEvent(new CustomEvent('auth-session-expired'));
           globalAlert(data.message || 'Sesión expirada.', 'Acceso Denegado', 'danger');

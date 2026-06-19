@@ -20,7 +20,8 @@ async function startServer() {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/tenant/ai-credentials', {
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/tenant/ai-credentials`, {
         headers: { 'Authorization': authHeader, 'Accept': 'application/json' }
       });
       const data = await response.json();

@@ -3,156 +3,264 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>API - Amigable Cobro | Documentación Interactiva</title>
+<title>Amigable Cobro · API Docs</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #0c0e17;
+    --surface: #13162b;
+    --surface2: #1a1f3a;
+    --border: #1e2547;
+    --border2: #2a3360;
+    --text: #e8edff;
+    --text2: #8892b8;
+    --text3: #5a6488;
+    --accent: #6374f0;
+    --accent2: #4f5fd8;
+    --green: #34d399;
+    --green-bg: rgba(52, 211, 153, .1);
+    --red: #f87171;
+    --red-bg: rgba(248, 113, 113, .1);
+    --yellow: #fbbf24;
+    --yellow-bg: rgba(251, 191, 36, .1);
+    --blue: #60a5fa;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid #334155; padding: 2rem 0; text-align: center; }
-  .header h1 { font-size: 2rem; color: #f8fafc; }
-  .header p { color: #94a3b8; margin-top: .5rem; }
-  .header .base-url { display: inline-block; background: #1e293b; padding: .5rem 1rem; border-radius: .5rem; font-family: monospace; color: #38bdf8; margin-top: .75rem; font-size: .9rem; border: 1px solid #334155; }
-  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* Header */
+  .header { border-bottom: 1px solid var(--border); background: var(--surface); }
+  .header-inner { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 1.5rem; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }
+  .header h1 span { color: var(--accent); }
+  .header .sub { color: var(--text2); font-size: .875rem; margin-top: .25rem; }
+  .header .base { display: inline-flex; align-items: center; gap: .5rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .4rem .75rem; font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--accent); margin-top: .75rem; }
+  .header .base svg { width: 14px; height: 14px; opacity: .6; }
+
+  /* Credentials */
+  .creds { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
+  .creds-field { flex: 1; min-width: 200px; }
+  .creds-field label { display: block; font-size: .7rem; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .35rem; }
+  .creds-field .input-wrap { display: flex; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 .75rem; transition: border-color .15s; }
+  .creds-field .input-wrap:focus-within { border-color: var(--accent); }
+  .creds-field .input-wrap .icon { width: 14px; height: 14px; opacity: .4; flex-shrink: 0; }
+  .creds-field input { background: none; border: none; padding: .55rem .5rem; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: .8rem; width: 100%; outline: none; }
+  .creds-field input::placeholder { color: var(--text3); }
+  .creds-status { display: flex; align-items: center; gap: .4rem; font-size: .75rem; color: var(--text3); white-space: nowrap; }
+  .creds-status.ok { color: var(--green); }
+  .creds-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
+  .creds-status.ok .dot { background: var(--green); }
+
+  /* Container */
+  .container { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+
+  /* Section */
   section { margin-bottom: 2.5rem; }
-  h2 { font-size: 1.4rem; color: #f1f5f9; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 2px solid #334155; }
-  h3 { font-size: 1.1rem; color: #38bdf8; margin: 1.5rem 0 .75rem; }
-  .card { background: #1e293b; border-radius: .75rem; border: 1px solid #334155; margin-bottom: 1rem; overflow: hidden; }
-  .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: .75rem; font-weight: 600; }
-  .method { display: inline-block; padding: .2rem .6rem; border-radius: .3rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; min-width: 4rem; text-align: center; }
-  .method.get { background: #1e3a5f; color: #60a5fa; }
-  .method.post { background: #1e3a2f; color: #4ade80; }
-  .method.put { background: #3a2f1e; color: #fbbf24; }
-  .card-body { padding: 1.25rem; }
-  .card-body p { margin-bottom: .75rem; color: #cbd5e1; }
-  pre { background: #0f172a; padding: 1rem; border-radius: .5rem; overflow-x: auto; font-size: .85rem; line-height: 1.5; margin: .75rem 0; border: 1px solid #1e293b; }
-  pre code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-  .inline-code { background: #0f172a; padding: .15rem .4rem; border-radius: .25rem; font-size: .85rem; color: #38bdf8; border: 1px solid #1e293b; font-family: monospace; }
-  .note { background: #172554; border-left: 4px solid #3b82f6; padding: 1rem; border-radius: .5rem; margin: 1rem 0; }
-  .note strong { color: #93c5fd; }
-  .warning { background: #3a2f1e; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: .5rem; margin: 1rem 0; }
-  .warning strong { color: #fcd34d; }
-  table { width: 100%; border-collapse: collapse; margin: .75rem 0; }
-  th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid #334155; font-size: .85rem; }
-  th { color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: .75rem; letter-spacing: .05em; }
-  td { color: #cbd5e1; }
-  .tag { display: inline-block; padding: .15rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
-  .tag.req { background: #3b1f1f; color: #f87171; }
-  .tag.opt { background: #1e3a2f; color: #4ade80; }
-  .footer { text-align: center; padding: 2rem; color: #64748b; font-size: .85rem; border-top: 1px solid #1e293b; margin-top: 3rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .5rem; }
+  h2 .count { font-size: .75rem; color: var(--text3); font-weight: 400; background: var(--surface2); padding: .1rem .5rem; border-radius: 999px; }
 
-  /* Credentials bar */
-  .creds-bar { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 0; position: sticky; top: 0; z-index: 100; }
-  .creds-inner { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
-  .creds-inner label { font-size: .75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; }
-  .creds-inner input { background: #0f172a; border: 1px solid #334155; border-radius: .4rem; padding: .5rem .75rem; color: #e2e8f0; font-family: monospace; font-size: .8rem; flex: 1; min-width: 120px; outline: none; }
-  .creds-inner input:focus { border-color: #38bdf8; }
-  .creds-inner .status { font-size: .75rem; color: #f87171; }
-  .creds-inner .status.ok { color: #4ade80; }
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: .75rem; overflow: hidden; transition: border-color .15s; }
+  .card:hover { border-color: var(--border2); }
+  .card-header { display: flex; align-items: center; gap: .75rem; padding: .9rem 1.1rem; cursor: pointer; user-select: none; -webkit-user-select: none; }
+  .card-header .method { font-size: .7rem; font-weight: 700; padding: .2rem .55rem; border-radius: 4px; text-transform: uppercase; letter-spacing: .03em; line-height: 1.3; }
+  .method.get { background: rgba(96, 165, 250, .12); color: var(--blue); }
+  .method.post { background: rgba(52, 211, 153, .12); color: var(--green); }
+  .method.put { background: rgba(251, 191, 36, .12); color: var(--yellow); }
+  .card-header .path { font-family: 'JetBrains Mono', monospace; font-size: .85rem; color: var(--text); font-weight: 500; }
+  .card-header .chevron { margin-left: auto; opacity: .3; transition: transform .2s; width: 16px; height: 16px; flex-shrink: 0; }
+  .card-header .chevron.open { transform: rotate(180deg); }
+  .card-body { padding: 0 1.1rem 1.1rem; display: none; }
+  .card-body.open { display: block; }
+  .card-body > p { color: var(--text2); font-size: .85rem; line-height: 1.6; margin-bottom: 1rem; }
 
-  /* Try it section */
-  .try-it { border-top: 1px solid #334155; margin-top: 1rem; padding-top: 1rem; }
-  .try-it .params { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
-  .try-it .params input, .try-it .params select { background: #0f172a; border: 1px solid #334155; border-radius: .4rem; padding: .5rem .75rem; color: #e2e8f0; font-size: .8rem; font-family: monospace; flex: 1; min-width: 150px; outline: none; }
-  .try-it .params input:focus, .try-it .params select:focus { border-color: #38bdf8; }
-  .try-it .params input::placeholder { color: #475569; }
-  .try-it .params select option { background: #1e293b; }
-  .btn-try { background: #1e3a5f; color: #60a5fa; border: 1px solid #1e3a5f; padding: .5rem 1rem; border-radius: .4rem; font-weight: 600; font-size: .8rem; cursor: pointer; transition: all .15s; }
-  .btn-try:hover { background: #1e4a7f; }
-  .btn-try:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-try.sending { background: #3a2f1e; color: #fbbf24; }
-  .response-box { background: #0f172a; border: 1px solid #1e293b; border-radius: .5rem; padding: 1rem; margin-top: .75rem; display: none; }
-  .response-box .resp-code { font-size: .75rem; color: #64748b; margin-bottom: .5rem; }
-  .response-box .resp-code span { color: #60a5fa; font-weight: 600; }
-  .response-box pre { margin: 0; max-height: 300px; overflow-y: auto; }
-  .response-box .resp-error { color: #f87171; }
-  @media (max-width: 640px) { .header h1 { font-size: 1.5rem; } .container { padding: 1rem; } .creds-inner { flex-direction: column; } .creds-inner input { width: 100%; } }
+  /* Table */
+  .param-table { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .82rem; }
+  .param-table th { text-align: left; padding: .5rem .6rem; color: var(--text3); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); }
+  .param-table td { padding: .5rem .6rem; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .param-table td:first-child { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+  .tag { display: inline-block; padding: .1rem .4rem; border-radius: 4px; font-size: .65rem; font-weight: 600; }
+  .tag.req { background: var(--red-bg); color: var(--red); }
+  .tag.opt { background: var(--green-bg); color: var(--green); }
+
+  /* Try it */
+  .try-section { border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem; }
+  .try-section .params { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+  .try-section .params input, .try-section .params select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .55rem .75rem; color: var(--text); font-size: .82rem; font-family: 'JetBrains Mono', monospace; flex: 1; min-width: 160px; outline: none; transition: border-color .15s; }
+  .try-section .params input:focus, .try-section .params select:focus { border-color: var(--accent); }
+  .try-section .params input::placeholder { color: var(--text3); }
+  .try-section .params select { cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6488' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .6rem center; padding-right: 2rem; }
+  .try-section .params select option { background: var(--surface); }
+  .try-section .params textarea { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem; color: var(--text); font-size: .82rem; font-family: 'JetBrains Mono', monospace; width: 100%; outline: none; resize: vertical; min-height: 100px; transition: border-color .15s; }
+  .try-section .params textarea:focus { border-color: var(--accent); }
+
+  .try-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: var(--radius-sm); font-size: .8rem; font-weight: 600; cursor: pointer; transition: all .15s; border: none; font-family: inherit; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border2); color: var(--text); }
+  .btn .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: none; }
+  .btn.loading .spinner { display: block; }
+  .btn.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Response */
+  .resp { margin-top: .75rem; border-radius: var(--radius-sm); overflow: hidden; display: none; }
+  .resp-header { display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; background: var(--bg); border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius-sm) var(--radius-sm) 0 0; font-size: .75rem; color: var(--text3); }
+  .resp-header .status-badge { font-weight: 700; padding: .1rem .5rem; border-radius: 4px; font-size: .7rem; }
+  .resp-header .status-badge.ok { background: var(--green-bg); color: var(--green); }
+  .resp-header .status-badge.err { background: var(--red-bg); color: var(--red); }
+  .resp-header .time { margin-left: auto; }
+  .resp-body { background: var(--bg); border: 1px solid var(--border); border-radius: 0 0 var(--radius-sm) var(--radius-sm); padding: .75rem; overflow-x: auto; max-height: 350px; overflow-y: auto; }
+  .resp-body pre { font-family: 'JetBrains Mono', monospace; font-size: .8rem; line-height: 1.5; color: var(--text2); white-space: pre-wrap; }
+  .resp-body .key { color: #93c5fd; }
+  .resp-body .string { color: #a7f3d0; }
+  .resp-body .number { color: #fde68a; }
+  .resp-body .bool { color: #c4b5fd; }
+  .resp-body .null { color: var(--text3); }
+  .resp-body .bracket { color: var(--text3); }
+
+  /* Pre/code for examples */
+  pre.code-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: .82rem; line-height: 1.6; margin: .75rem 0; color: var(--text2); }
+  .inline-code { font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--accent); }
+
+  /* Footer */
+  .footer { text-align: center; padding: 2rem; color: var(--text3); font-size: .8rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+
+  @media (max-width: 640px) {
+    .header h1 { font-size: 1.25rem; }
+    .creds { flex-direction: column; }
+    .creds-field { min-width: 0; }
+    .container { padding: 1rem; }
+    .try-section .params { flex-direction: column; }
+    .try-section .params input, .try-section .params select { min-width: 0; }
+  }
 </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
-  <h1>Amigable Cobro — API REST</h1>
-  <p>Documentación interactiva para integración de agentes y sistemas externos</p>
-  <div class="base-url">https://api-amigablecobro.amacruxlab.com/api/v1</div>
-</div>
+  <div class="header-inner">
+    <div class="header-top">
+      <div>
+        <h1>Amigable <span>Cobro</span> · API</h1>
+        <div class="sub">Documentación interactiva para integración de agentes y sistemas externos</div>
+      </div>
+    </div>
+    <div class="base">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      https://api-amigablecobro.amacruxlab.com/api/v1
+    </div>
 
-<!-- Credentials bar -->
-<div class="creds-bar">
-  <div class="creds-inner">
-    <label>X-Entity-ID</label>
-    <input type="text" id="input-entity-id" placeholder="ej: 779d1ab2-..." value="779d1ab2-2bc1-4f27-b6a8-9e99cc00cd64" spellcheck="false">
-    <label>Bearer Token</label>
-    <input type="text" id="input-bearer" placeholder="ej: 81381ab9..." value="81381ab9d12898b9137b40590b4dfb884f420fbee01a5f102961584396b0fb99" spellcheck="false">
-    <span class="status" id="creds-status"></span>
+    <!-- Credentials -->
+    <div class="creds">
+      <div class="creds-field">
+        <label>X-Entity-ID</label>
+        <div class="input-wrap">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="text" id="input-entity" placeholder="UUID de la entidad" value="779d1ab2-2bc1-4f27-b6a8-9e99cc00cd64" spellcheck="false">
+        </div>
+      </div>
+      <div class="creds-field">
+        <label>Bearer Token</label>
+        <div class="input-wrap">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.743 5.743L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.586a1 1 0 0 1 .293-.707l5.964-5.964A6 6 0 1 1 21 9Z"/></svg>
+          <input type="text" id="input-token" placeholder="Token de acceso" value="81381ab9d12898b9137b40590b4dfb884f420fbee01a5f102961584396b0fb99" spellcheck="false">
+        </div>
+      </div>
+      <div class="creds-status" id="creds-status">
+        <span class="dot"></span>
+        <span>Listo para probar</span>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="container">
 
-<!-- Autenticación -->
-<section>
-  <h2>Autenticación</h2>
-  <p>Todos los endpoints (excepto <span class="inline-code">/public/businesses</span>) requieren autenticación. Ingresa tus credenciales en la barra superior y se enviarán automáticamente en cada prueba.</p>
-
-  <div class="card">
-    <div class="card-header"><span style="color:#38bdf8;">X-Entity-ID</span></div>
-    <div class="card-body">
-      <p>UUID de la entidad o agente autorizado. Se obtiene al registrar tu agente en el panel de administración.</p>
-      <pre>X-Entity-ID: 779d1ab2-2bc1-4f27-b6a8-9e99cc00cd64</pre>
-    </div>
+<!-- Quick reference note -->
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:2rem;display:flex;align-items:flex-start;gap:.75rem;">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+  <div style="font-size:.85rem;color:var(--text2);line-height:1.6;">
+    Las credenciales se envían automáticamente en cada petición.
+    Haz clic en cualquier endpoint para expandirlo y probarlo con datos reales.
+    <strong style="color:var(--text);">Los campos marcados con * son obligatorios.</strong>
   </div>
+</div>
 
-  <div class="card">
-    <div class="card-header"><span style="color:#38bdf8;">Authorization: Bearer</span></div>
-    <div class="card-body">
-      <p>Token de acceso generado desde el panel SuperAdmin en <span class="inline-code">/superadmin/api-entities</span>. También puede enviarse como <span class="inline-code">X-API-Key</span>.</p>
-      <pre>Authorization: Bearer 81381ab9d12898b9137b40590b4dfb884f420fbee01a5f102961584396b0fb99</pre>
-    </div>
-  </div>
-</section>
-
-<!-- Directorio Público -->
+<!-- Public -->
 <section>
-  <h2>Directorio Público</h2>
-  <p>No requiere autenticación.</p>
-
+  <h2>Directorio Público <span class="count">1</span></h2>
   <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /public/businesses</div>
-    <div class="card-body">
-      <p>Obtiene todos los negocios activos con su UUID, nombre y WhatsApp.</p>
-      <div class="try-it" data-method="GET" data-endpoint="/public/businesses" data-auth="false">
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
-      </div>
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method get">GET</span>
+      <span class="path">/public/businesses</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
-  </div>
-</section>
-
-<!-- Colecciones -->
-<section>
-  <h2>Colecciones (Cuentas por Cobrar)</h2>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /collections</div>
     <div class="card-body">
-      <p>Lista todas las transacciones de un negocio.</p>
-      <div class="try-it" data-method="GET" data-endpoint="/collections" data-auth="true">
-        <div class="params">
-          <input type="text" class="param" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
-          <input type="text" class="param" data-name="status" placeholder="status (PENDING, PAID)">
+      <p>Obtiene todos los negocios activos con su UUID, nombre y WhatsApp. No requiere autenticación.</p>
+      <pre class="code-block">[
+  { "uuid": "b206bc66-...", "name": "Mi Negocio", "whatsapp_phone": "+584241234567" }
+]</pre>
+      <div class="try-section" data-method="GET" data-ep="/public/businesses" data-auth="false">
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
         </div>
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
+        <div class="resp"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Collections -->
+<section>
+  <h2>Colecciones <span class="count">5</span></h2>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method get">GET</span>
+      <span class="path">/collections</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="card-body">
+      <p>Lista todas las cuentas por cobrar de un negocio, con paginación y filtros.</p>
+      <table class="param-table">
+        <tr><th>Parámetro</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+        <tr><td>status</td><td>string</td><td><span class="tag opt">opt</span></td><td>PENDING, PAID</td></tr>
+        <tr><td>page</td><td>int</td><td><span class="tag opt">opt</span></td><td>Número de página</td></tr>
+      </table>
+      <div class="try-section" data-method="GET" data-ep="/collections" data-auth="true">
+        <div class="params">
+          <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
+          <input type="text" class="p" data-name="status" placeholder="status (opcional)">
+        </div>
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
+        </div>
+        <div class="resp"></div>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-header"><span class="method post">POST</span> /collections</div>
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method post">POST</span>
+      <span class="path">/collections</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
     <div class="card-body">
       <p>Crea una nueva cuenta por cobrar.</p>
-      <div class="try-it" data-method="POST" data-endpoint="/collections" data-auth="true">
-        <div class="params" style="flex-direction:column;">
-          <textarea class="param" data-name="body" rows="6" placeholder="JSON body" style="background:#0f172a;border:1px solid #334155;border-radius:.4rem;padding:.75rem;color:#e2e8f0;font-family:monospace;font-size:.8rem;outline:none;resize:vertical;">{
+      <div class="try-section" data-method="POST" data-ep="/collections" data-auth="true">
+        <div class="params">
+          <textarea class="p" data-name="body" rows="6">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "client_name": "Juan Pérez",
   "client_phone": "+584140000000",
@@ -161,61 +269,89 @@
   "due_date": "2026-08-15T00:00:00Z"
 }</textarea>
         </div>
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /collections/{id}</div>
-    <div class="card-body">
-      <p>Obtiene una cuenta específica con sus pagos.</p>
-      <div class="try-it" data-method="GET" data-endpoint="/collections/" data-auth="true">
-        <div class="params">
-          <input type="text" class="param" data-name="path" placeholder="{id} *" value="1">
-          <input type="text" class="param" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
         </div>
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
+        <div class="resp"></div>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-header"><span class="method post">POST</span> /collections/{id}/payments</div>
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method get">GET</span>
+      <span class="path">/collections/{id}</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
     <div class="card-body">
-      <p>Registra un pago a una cuenta.</p>
-      <div class="try-it" data-method="POST" data-endpoint="/collections/" data-auth="true" data-path-suffix="/payments">
-        <div class="params" style="flex-direction:column;">
-          <input type="text" class="param" data-name="path" placeholder="{id} *" value="1" style="margin-bottom:.5rem;">
-          <textarea class="param" data-name="body" rows="5" placeholder="JSON body" style="background:#0f172a;border:1px solid #334155;border-radius:.4rem;padding:.75rem;color:#e2e8f0;font-family:monospace;font-size:.8rem;outline:none;resize:vertical;">{
+      <p>Obtiene una cuenta específica con sus pagos asociados.</p>
+      <div class="try-section" data-method="GET" data-ep="/collections/" data-auth="true" data-suffix="">
+        <div class="params">
+          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
+          <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
+        </div>
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
+        </div>
+        <div class="resp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method post">POST</span>
+      <span class="path">/collections/{id}/payments</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="card-body">
+      <p>Registra un pago parcial o total a una cuenta.</p>
+      <div class="try-section" data-method="POST" data-ep="/collections/" data-auth="true" data-suffix="/payments">
+        <div class="params">
+          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1" style="width:100%;">
+        </div>
+        <div class="params" style="margin-top:.5rem;">
+          <textarea class="p" data-name="body" rows="5">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "amount": 100.00,
   "payment_method": "TRANSFER",
   "payment_date": "2026-06-24T14:30:00Z"
 }</textarea>
         </div>
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
+        </div>
+        <div class="resp"></div>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-header"><span class="method put">PUT</span> /collections/{id}/status</div>
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method put">PUT</span>
+      <span class="path">/collections/{id}/status</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
     <div class="card-body">
-      <p>Actualiza el estado de una cuenta.</p>
-      <div class="try-it" data-method="PUT" data-endpoint="/collections/" data-auth="true" data-path-suffix="/status">
-        <div class="params" style="flex-direction:column;">
-          <input type="text" class="param" data-name="path" placeholder="{id} *" value="1" style="margin-bottom:.5rem;">
-          <textarea class="param" data-name="body" rows="4" placeholder="JSON body" style="background:#0f172a;border:1px solid #334155;border-radius:.4rem;padding:.75rem;color:#e2e8f0;font-family:monospace;font-size:.8rem;outline:none;resize:vertical;">{
+      <p>Actualiza el estado de una cuenta: <span class="inline-code">PENDING</span>, <span class="inline-code">PAID</span>, <span class="inline-code">OVERDUE</span>, <span class="inline-code">CANCELLED</span>.</p>
+      <div class="try-section" data-method="PUT" data-ep="/collections/" data-auth="true" data-suffix="/status">
+        <div class="params">
+          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1" style="width:100%;">
+        </div>
+        <div class="params" style="margin-top:.5rem;">
+          <textarea class="p" data-name="body" rows="4">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "status": "PAID"
 }</textarea>
         </div>
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
+        </div>
+        <div class="resp"></div>
       </div>
     </div>
   </div>
@@ -223,69 +359,84 @@
 
 <!-- Analytics -->
 <section>
-  <h2>Estadísticas e Inteligencia</h2>
-
+  <h2>Estadísticas <span class="count">1</span></h2>
   <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /analytics/kpis</div>
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method get">GET</span>
+      <span class="path">/analytics/kpis</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
     <div class="card-body">
-      <p>Obtiene indicadores clave de rendimiento.</p>
-      <div class="try-it" data-method="GET" data-endpoint="/analytics/kpis" data-auth="true">
+      <p>Indicadores clave: montos emitidos, cobrados, pendientes y tasa de cobranza.</p>
+      <div class="try-section" data-method="GET" data-ep="/analytics/kpis" data-auth="true">
         <div class="params">
-          <input type="text" class="param" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
-          <select class="param" data-name="period">
-            <option value="">periodo</option>
-            <option value="today">today</option>
-            <option value="this_week">this_week</option>
-            <option value="this_month" selected>this_month</option>
-            <option value="this_year">this_year</option>
-            <option value="all_time">all_time</option>
+          <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
+          <select class="p" data-name="period">
+            <option value="">Periodo</option>
+            <option value="today">Hoy</option>
+            <option value="this_week">Esta semana</option>
+            <option value="this_month" selected>Este mes</option>
+            <option value="this_year">Este año</option>
+            <option value="all_time">Todo el tiempo</option>
           </select>
         </div>
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Calendario -->
-<section>
-  <h2>Calendario y Eventos</h2>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /calendar/events</div>
-    <div class="card-body">
-      <p>Obtiene eventos de cobro agrupados por día.</p>
-      <div class="try-it" data-method="GET" data-endpoint="/calendar/events" data-auth="true">
-        <div class="params">
-          <input type="text" class="param" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
-          <input type="text" class="param" data-name="month" placeholder="month *" value="6">
-          <input type="text" class="param" data-name="year" placeholder="year *" value="2026">
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
         </div>
-        <button class="btn-try" onclick="tryEndpoint(this)">Probar</button>
-        <div class="response-box"></div>
+        <div class="resp"></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Errores -->
+<!-- Calendar -->
 <section>
-  <h2>Códigos de Error</h2>
-  <table>
-    <tr><th>HTTP</th><th>Significado</th></tr>
-    <tr><td>401</td><td>Faltan credenciales o son inválidas</td></tr>
-    <tr><td>401</td><td>Token expirado</td></tr>
-    <tr><td>403</td><td>Entidad inactiva</td></tr>
+  <h2>Calendario <span class="count">1</span></h2>
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method get">GET</span>
+      <span class="path">/calendar/events</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="card-body">
+      <p>Eventos de cobro agrupados por día para un mes específico.</p>
+      <div class="try-section" data-method="GET" data-ep="/calendar/events" data-auth="true">
+        <div class="params">
+          <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
+          <input type="text" class="p" data-name="month" placeholder="mes *" value="6">
+          <input type="text" class="p" data-name="year" placeholder="año *" value="2026">
+        </div>
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
+        </div>
+        <div class="resp"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Status codes -->
+<section>
+  <h2>Códigos de Estado HTTP</h2>
+  <table class="param-table">
+    <tr><th>Código</th><th>Significado</th></tr>
+    <tr><td>200</td><td>Operación exitosa</td></tr>
+    <tr><td>201</td><td>Recurso creado exitosamente</td></tr>
+    <tr><td>400</td><td>Solicitud incorrecta (ej: cuenta ya pagada)</td></tr>
+    <tr><td>401</td><td>Credenciales faltantes, inválidas o expiradas</td></tr>
+    <tr><td>403</td><td>Entidad inactiva o sin permisos</td></tr>
     <tr><td>404</td><td>Recurso no encontrado</td></tr>
-    <tr><td>422</td><td>Error de validación (revisar campos)</td></tr>
+    <tr><td>422</td><td>Error de validación — revisa los campos enviados</td></tr>
     <tr><td>500</td><td>Error interno del servidor</td></tr>
   </table>
 </section>
 
+<!-- Payment methods -->
 <section>
   <h2>Métodos de Pago</h2>
-  <table>
+  <table class="param-table">
     <tr><th>Valor</th><th>Descripción</th></tr>
     <tr><td><span class="inline-code">CASH</span></td><td>Efectivo</td></tr>
     <tr><td><span class="inline-code">TRANSFER</span></td><td>Transferencia bancaria</td></tr>
@@ -296,39 +447,66 @@
   </table>
 </section>
 
-<div class="footer">
-  Amigable Cobro API &mdash; Documentación interactiva &mdash; v1.0.0
-</div>
-
+<div class="footer">Amigable Cobro API · Documentación interactiva · v1.0.0</div>
 </div>
 
 <script>
 const BASE = 'https://api-amigablecobro.amacruxlab.com/api/v1';
 
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.chevron');
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+
 function getCreds() {
   return {
-    entityId: document.getElementById('input-entity-id').value.trim(),
-    bearer: document.getElementById('input-bearer').value.trim(),
+    entity: document.getElementById('input-entity').value.trim(),
+    token: document.getElementById('input-token').value.trim(),
   };
 }
 
-function updateCredsStatus(ok, msg) {
+function setCredsStatus(ok, msg) {
   const el = document.getElementById('creds-status');
-  el.textContent = msg || '';
-  el.className = 'status' + (ok ? ' ok' : '');
+  el.className = 'creds-status' + (ok ? ' ok' : '');
+  el.innerHTML = `<span class="dot"></span><span>${msg || (ok ? 'Credenciales OK' : 'Configura las credenciales')}</span>`;
 }
 
-async function tryEndpoint(btn) {
-  const tryIt = btn.closest('.try-it');
-  const method = tryIt.dataset.method;
-  let endpoint = tryIt.dataset.endpoint;
-  const auth = tryIt.dataset.auth === 'true';
-  const pathSuffix = tryIt.dataset.pathSuffix || '';
-  const box = tryIt.querySelector('.response-box');
+function highlightJSON(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(
+    /("(?:\\.|[^"\\])*")\s*:/g,
+    '<span class="key">$1</span>:'
+  ).replace(
+    /:\s*("(?:\\.|[^"\\])*")/g,
+    ': <span class="string">$1</span>'
+  ).replace(
+    /:\s*(\d+\.?\d*)/g,
+    ': <span class="number">$1</span>'
+  ).replace(
+    /:\s*(true|false)/g,
+    ': <span class="bool">$1</span>'
+  ).replace(
+    /:\s*(null)/g,
+    ': <span class="null">$1</span>'
+  ).replace(
+    /([\[\]\{\}])/g,
+    '<span class="bracket">$1</span>'
+  );
+}
+
+async function tryIt(btn) {
+  const sec = btn.closest('.try-section');
+  const method = sec.dataset.method;
+  let ep = sec.dataset.ep;
+  const auth = sec.dataset.auth === 'true';
+  const suffix = sec.dataset.suffix || '';
+  const respEl = sec.querySelector('.resp');
 
   // Collect params
-  const params = tryIt.querySelectorAll('.param');
-  let queryParts = [];
+  const params = sec.querySelectorAll('.p');
+  let qs = [];
   let body = null;
   let pathId = '';
 
@@ -336,81 +514,125 @@ async function tryEndpoint(btn) {
     const name = p.dataset.name;
     const val = p.value.trim();
     if (!val) return;
-    if (name === 'path') {
-      pathId = val;
-    } else if (name === 'body') {
-      try { body = JSON.parse(val); } catch(e) { body = val; }
-    } else {
-      queryParts.push(encodeURIComponent(name) + '=' + encodeURIComponent(val));
-    }
+    if (name === 'path') { pathId = val; }
+    else if (name === 'body') { try { body = JSON.parse(val); } catch(e) { body = val; } }
+    else { qs.push(encodeURIComponent(name) + '=' + encodeURIComponent(val)); }
   });
 
-  let url = BASE + endpoint;
-  if (pathId) url += pathId;
-  if (pathSuffix) url += pathSuffix;
-  if (queryParts.length > 0) url += '?' + queryParts.join('&');
+  let url = BASE + ep + pathId + suffix;
+  if (qs.length) url += (url.includes('?') ? '&' : '?') + qs.join('&');
 
-  // Prepare headers
+  // Headers
   const headers = { 'Accept': 'application/json' };
   if (body) headers['Content-Type'] = 'application/json';
   if (auth) {
-    const creds = getCreds();
-    if (!creds.entityId || !creds.bearer) {
-      updateCredsStatus(false, 'Completa X-Entity-ID y Bearer Token');
-      return;
-    }
-    headers['X-Entity-ID'] = creds.entityId;
-    headers['Authorization'] = 'Bearer ' + creds.bearer;
-    updateCredsStatus(true, 'Credenciales OK');
+    const c = getCreds();
+    if (!c.entity || !c.token) { setCredsStatus(false, 'Completa las credenciales'); return; }
+    headers['X-Entity-ID'] = c.entity;
+    headers['Authorization'] = 'Bearer ' + c.token;
+    setCredsStatus(true, 'Credenciales OK');
   }
 
-  // UI: loading
+  // Loading
+  btn.classList.add('loading');
   btn.disabled = true;
-  btn.textContent = 'Enviando...';
-  btn.classList.add('sending');
-  box.style.display = 'block';
-  box.innerHTML = '<pre style="color:#94a3b8;">Cargando...</pre>';
+  respEl.style.display = 'block';
+  respEl.innerHTML = '<div class="resp-body"><pre style="color:var(--text3)">Enviando petición...</pre></div>';
 
   try {
-    const fetchOpts = { method, headers };
-    if (body) fetchOpts.body = JSON.stringify(body);
+    const opts = { method, headers };
+    if (body) opts.body = JSON.stringify(body);
 
     const start = performance.now();
-    const resp = await fetch(url, fetchOpts);
-    const elapsed = ((performance.now() - start) / 1000).toFixed(2);
-    const contentType = resp.headers.get('content-type') || '';
-    let respBody;
-    if (contentType.includes('application/json')) {
-      respBody = await resp.json();
-    } else {
-      respBody = await resp.text();
-    }
+    const r = await fetch(url, opts);
+    const ms = ((performance.now() - start) / 1000).toFixed(2);
+    const ct = r.headers.get('content-type') || '';
+    let data = ct.includes('json') ? await r.json() : await r.text();
+    const formatted = typeof data === 'object' ? highlightJSON(data) : escapeHtml(data);
+    const ok = r.ok;
+    const statusColor = ok ? 'var(--green)' : 'var(--red)';
 
-    const formatted = typeof respBody === 'object' ? JSON.stringify(respBody, null, 2) : respBody;
-    const statusColor = resp.ok ? '#4ade80' : '#f87171';
-
-    box.innerHTML = `
-      <div class="resp-code">Status: <span style="color:${statusColor};font-weight:700;">${resp.status}</span> &middot; ${elapsed}s</div>
-      <pre><code>${escapeHtml(formatted)}</code></pre>
+    respEl.innerHTML = `
+      <div class="resp-header">
+        <span class="status-badge ${ok ? 'ok' : 'err'}" style="background:${ok ? 'var(--green-bg)' : 'var(--red-bg)'};color:${statusColor}">${r.status}</span>
+        <span style="color:var(--text3)">${r.statusText || (ok ? 'OK' : 'Error')}</span>
+        <span class="time">${ms}s</span>
+      </div>
+      <div class="resp-body"><pre>${formatted}</pre></div>
     `;
   } catch (err) {
-    box.innerHTML = `<div class="resp-code resp-error">Error de red: ${escapeHtml(err.message)}</div>`;
+    respEl.innerHTML = `<div class="resp-body"><pre style="color:var(--red)">Error de red: ${escapeHtml(err.message)}</pre></div>`;
   } finally {
+    btn.classList.remove('loading');
     btn.disabled = false;
-    btn.textContent = 'Probar';
-    btn.classList.remove('sending');
   }
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+function buildCurl(method, url, headers, body) {
+  let curl = `curl -sk -X ${method} "${url}"`;
+  for (const [k, v] of Object.entries(headers)) {
+    curl += ` \\\n  -H "${k}: ${v}"`;
+  }
+  if (body) {
+    const str = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+    curl += ` \\\n  -d '${str.replace(/'/g, "'\\''")}'`;
+  }
+  return curl;
 }
 
-// Detect credential changes
-document.getElementById('input-entity-id').addEventListener('input', () => updateCredsStatus(false, ''));
-document.getElementById('input-bearer').addEventListener('input', () => updateCredsStatus(false, ''));
+async function copyCurl(btn) {
+  const sec = btn.closest('.try-section');
+  const method = sec.dataset.method;
+  let ep = sec.dataset.ep;
+  const auth = sec.dataset.auth === 'true';
+  const suffix = sec.dataset.suffix || '';
+  const params = sec.querySelectorAll('.p');
+  let qs = [], body = null, pathId = '';
+
+  params.forEach(p => {
+    const name = p.dataset.name;
+    const val = p.value.trim();
+    if (!val) return;
+    if (name === 'path') pathId = val;
+    else if (name === 'body') { try { body = JSON.parse(val); } catch(e) { body = val; } }
+    else qs.push(encodeURIComponent(name) + '=' + encodeURIComponent(val));
+  });
+
+  let url = BASE + ep + pathId + suffix;
+  if (qs.length) url += (url.includes('?') ? '&' : '?') + qs.join('&');
+
+  const headers = { 'Accept': 'application/json' };
+  if (body) headers['Content-Type'] = 'application/json';
+  if (auth) {
+    const c = getCreds();
+    if (c.entity) headers['X-Entity-ID'] = c.entity;
+    if (c.token) headers['Authorization'] = 'Bearer ' + c.token;
+  }
+
+  const curl = buildCurl(method, url, headers, body);
+  try {
+    await navigator.clipboard.writeText(curl);
+    const orig = btn.textContent;
+    btn.textContent = 'Copiado!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch { /* fallback */ }
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Update creds status on input
+document.getElementById('input-entity').addEventListener('input', checkCreds);
+document.getElementById('input-token').addEventListener('input', checkCreds);
+function checkCreds() {
+  const c = getCreds();
+  if (c.entity && c.token) setCredsStatus(true, 'Credenciales OK');
+  else setCredsStatus(false, 'Configura las credenciales');
+}
+checkCreds();
 </script>
 </body>
 </html>

@@ -102,11 +102,13 @@ Route::prefix('v1')->group(function () {
     // Estas rutas son consumidas por agentes externos vía ApiEntityAuthMiddleware
     
     // Gestión de Cuentas y Cobros
-    Route::get('collections', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'index']);
-    Route::post('collections', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'store']);
-    Route::get('collections/{id}', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'show']);
-    Route::post('collections/{id}/payments', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'addPayment']);
-    Route::put('collections/{id}/status', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'updateStatus']);
+    Route::get('cuentas-y-cobros', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'index']);
+    Route::post('cuentas-y-cobros', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'store']);
+    Route::get('cuentas-y-cobros/{id}', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'show']);
+    Route::post('cuentas-y-cobros/{id}/payments', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'addPayment']);
+    Route::put('cuentas-y-cobros/{id}/status', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'updateStatus']);
+    Route::put('cuentas-y-cobros/{id}', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'update']);
+    Route::post('cuentas-y-cobros/apply-discount', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'applyDiscount']);
     
     // Estadísticas
     Route::get('analytics/kpis', [\App\Http\Controllers\ExternalApi\AnalyticsController::class, 'kpis']);

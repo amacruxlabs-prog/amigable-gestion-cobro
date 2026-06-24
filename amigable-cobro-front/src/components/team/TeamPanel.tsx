@@ -5,6 +5,7 @@ import {
   LogIn, Edit3, PlusCircle, DollarSign, Key, Power
 } from 'lucide-react';
 import { useUsers } from '../../hooks/useUsers';
+import { useUI } from '../../contexts/UIContext';
 
 type MemberRole = 'Admin Negocio' | 'Admin Local' | 'Lectura';
 
@@ -59,6 +60,7 @@ function getInitials(email: string, name?: string): string {
 
 export const TeamPanel: React.FC = () => {
   const { users, fetchUsers, createUser, toggleStatus, deleteUser, updatePassword, updateUser } = useUsers();
+  const { toast, confirm, alert } = useUI();
   
   useEffect(() => {
     fetchUsers();
@@ -138,12 +140,21 @@ export const TeamPanel: React.FC = () => {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!window.confirm("¿Estás seguro de eliminar permanentemente a este usuario?")) return;
-    try {
-      await deleteUser(id);
-    } catch (err) {
-      console.error(err);
-    }
+    confirm({
+      title: 'Eliminar Usuario',
+      message: '¿Estás seguro de eliminar permanentemente a este usuario? Esta acción no se puede deshacer.',
+      type: 'danger',
+      confirmText: 'Eliminar',
+      onConfirm: async () => {
+        try {
+          await deleteUser(id);
+          toast('Usuario eliminado', 'success');
+        } catch (err) {
+          console.error(err);
+          toast('Error al eliminar el usuario', 'error');
+        }
+      }
+    });
     setOpenMenuId(null);
   };
 
@@ -154,10 +165,10 @@ export const TeamPanel: React.FC = () => {
       await updatePassword(passwordTargetId, newPassword);
       setPasswordModalOpen(false);
       setNewPassword('');
-      alert("Contraseña actualizada exitosamente.");
+      toast("Contraseña actualizada exitosamente.", 'success');
     } catch (err) {
       console.error(err);
-      alert("Error al actualizar contraseña");
+      toast("Error al actualizar contraseña", 'error');
     }
   };
 

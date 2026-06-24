@@ -17,9 +17,21 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (! $token = auth('api')->attempt($credentials)) {
+        if (! auth('api')->validate($credentials)) {
             return $this->errorResponse('Credenciales inválidas.', 'UNAUTHORIZED', null, 401);
         }
+
+        $user = \App\Models\User::where('email', $credentials['email'])->first();
+        
+        $isAdmin = $user->roles->contains(function ($role) {
+            return str_contains(strtolower($role->name), 'admin');
+        });
+
+        // Eterna para admins (10 años), 1 semana para otros
+        $ttl = $isAdmin ? 5256000 : 10080;
+        auth('api')->factory()->setTTL($ttl);
+
+        $token = auth('api')->login($user);
 
         return $this->respondWithToken($token);
     }
@@ -47,6 +59,15 @@ class AuthController extends Controller
     public function refresh()
     {
         try {
+            $user = auth('api')->user();
+            if ($user) {
+                $isAdmin = $user->roles->contains(function ($role) {
+                    return str_contains(strtolower($role->name), 'admin');
+                });
+                $ttl = $isAdmin ? 5256000 : 10080;
+                auth('api')->factory()->setTTL($ttl);
+            }
+            
             return $this->respondWithToken(auth('api')->refresh());
         } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException $e) {
             return $this->errorResponse('No se pudo refrescar el token: ' . $e->getMessage(), 'UNAUTHENTICATED', null, 401);

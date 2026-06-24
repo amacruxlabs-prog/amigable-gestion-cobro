@@ -28,6 +28,14 @@ Route::group(['prefix' => 'superadmin', 'middleware' => 'auth:api'], function ()
     
     Route::get('settings', [GlobalSettingsController::class, 'index']);
     Route::put('settings', [GlobalSettingsController::class, 'update']);
+
+    // API Entities (Integraciones / Agentes)
+    Route::get('api-entities', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'index']);
+    Route::post('api-entities', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'store']);
+    Route::put('api-entities/{id}', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'update']);
+    Route::delete('api-entities/{id}', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'destroy']);
+    Route::post('api-entities/{id}/tokens', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'storeToken']);
+    Route::delete('api-entities/{id}/tokens/{tokenId}', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'revokeToken']);
 });
 
 use App\Http\Controllers\Tenant\TransactionController;
@@ -73,4 +81,37 @@ Route::group([
     Route::delete('transactions/{id}', [TransactionController::class, 'destroy']);
     Route::post('transactions/{id}/payment', [TransactionController::class, 'addPayment']);
     Route::post('transactions/apply-discount', [TransactionController::class, 'applyDiscount']);
+});
+
+// ==== API Externa de Integración ====
+Route::prefix('v1')->group(function () {
+    
+    // Directorio público de negocios (Id, Nombre, WhatsApp)
+    Route::get('/public/businesses', function () {
+        return response()->json([
+            'success' => true,
+            'data' => \Illuminate\Support\Facades\DB::table('businesses')
+                ->where('status', 'ACTIVE')
+                ->select('id', 'name', 'whatsapp_phone')
+                ->get()
+        ]);
+    });
+
+    // Rutas protegidas por el Token del Agente (Entidad API)
+    Route::middleware('auth.api_entity')->group(function () {
+    // Estas rutas son consumidas por agentes externos vía ApiEntityAuthMiddleware
+    
+    // Gestión de Cuentas y Cobros
+    Route::get('collections', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'index']);
+    Route::post('collections', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'store']);
+    Route::get('collections/{id}', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'show']);
+    Route::post('collections/{id}/payments', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'addPayment']);
+    Route::put('collections/{id}/status', [\App\Http\Controllers\ExternalApi\CollectionController::class, 'updateStatus']);
+    
+    // Estadísticas
+    Route::get('analytics/kpis', [\App\Http\Controllers\ExternalApi\AnalyticsController::class, 'kpis']);
+    
+    // Calendario
+    Route::get('calendar/events', [\App\Http\Controllers\ExternalApi\CalendarController::class, 'events']);
+    });
 });

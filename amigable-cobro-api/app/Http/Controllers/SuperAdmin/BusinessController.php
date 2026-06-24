@@ -18,6 +18,7 @@ class BusinessController extends Controller
         $request->validate([
             'name' => 'required|string|min:3',
             'owner_name' => 'required|string',
+            'whatsapp_phone' => 'required|string',
             'assign_to_me' => 'boolean',
             'admin_email' => 'exclude_if:assign_to_me,true|required|email|unique:users,email',
             'admin_password' => 'exclude_if:assign_to_me,true|required|string|min:8',
@@ -29,6 +30,7 @@ class BusinessController extends Controller
             $businessId = DB::table('businesses')->insertGetId([
                 'name' => $request->name,
                 'owner_name' => $request->owner_name,
+                'whatsapp_phone' => $request->whatsapp_phone,
                 'status' => 'ACTIVE',
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -219,6 +221,7 @@ class BusinessController extends Controller
         $request->validate([
             'name' => 'required|string|min:3',
             'owner_name' => 'required|string',
+            'whatsapp_phone' => 'required|string',
             'status' => 'required|string|in:ACTIVE,suspended',
             'admin_email' => 'nullable|email',
             'admin_password' => 'nullable|string|min:8',
@@ -236,6 +239,7 @@ class BusinessController extends Controller
             DB::table('businesses')->where('id', $id)->update([
                 'name' => $request->name,
                 'owner_name' => $request->owner_name,
+                'whatsapp_phone' => $request->whatsapp_phone,
                 'status' => $request->status,
                 'updated_at' => now()
             ]);

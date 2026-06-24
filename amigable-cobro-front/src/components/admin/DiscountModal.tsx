@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { formatCurrency } from '../../utils/format';
 import { Transaction } from '../../types';
 import { X, Search } from 'lucide-react';
+import { useUI } from '../../contexts/UIContext';
 
 interface DiscountModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface DiscountModalProps {
 }
 
 export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, transactions, onApplyDiscount }) => {
+  const { toast } = useUI();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [percentage, setPercentage] = useState<string>('');
@@ -45,11 +47,11 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, t
   const handleSubmit = async () => {
     const pct = parseFloat(percentage);
     if (isNaN(pct) || pct <= 0 || pct > 100) {
-      alert("Por favor ingresa un porcentaje de descuento válido (entre 1 y 100).");
+      toast("Por favor ingresa un porcentaje de descuento válido (entre 1 y 100).", "warning");
       return;
     }
     if (selectedIds.size === 0) {
-      alert("Debes seleccionar al menos un accionista de la lista.");
+      toast("Debes seleccionar al menos un accionista de la lista.", "warning");
       return;
     }
     setLoading(true);

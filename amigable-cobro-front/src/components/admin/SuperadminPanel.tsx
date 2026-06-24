@@ -335,6 +335,7 @@ const BusinessesView = () => {
     initialValues: {
       name: '',
       owner_name: '',
+      whatsapp_phone: '',
       status: 'ACTIVE',
       admin_email: '',
       admin_password: '',
@@ -343,6 +344,7 @@ const BusinessesView = () => {
     validationSchema: Yup.object({
       name: Yup.string().min(3, 'Mínimo 3 caracteres').required('Requerido'),
       owner_name: Yup.string().min(3, 'Mínimo 3 caracteres').required('Requerido'),
+      whatsapp_phone: Yup.string().required('Requerido'),
       status: Yup.string().oneOf(['ACTIVE', 'suspended']).required('Requerido'),
       admin_email: Yup.string().email('Correo inválido').required('Requerido'),
       admin_password: Yup.string().min(8, 'Mínimo 8 caracteres').nullable(),
@@ -369,6 +371,7 @@ const BusinessesView = () => {
       editFormik.setValues({
         name: editingBusiness.name,
         owner_name: editingBusiness.owner_name,
+        whatsapp_phone: editingBusiness.whatsapp_phone || '',
         status: editingBusiness.status || 'ACTIVE',
         admin_email: editingBusiness.admin_email || '',
         admin_password: '',
@@ -380,6 +383,7 @@ const BusinessesView = () => {
     initialValues: {
       name: '',
       owner_name: '',
+      whatsapp_phone: '',
       assign_to_me: false,
       admin_email: '',
       admin_password: '',
@@ -387,6 +391,7 @@ const BusinessesView = () => {
     validationSchema: Yup.object({
       name: Yup.string().min(3, 'Mínimo 3 caracteres').required('Requerido'),
       owner_name: Yup.string().min(3, 'Mínimo 3 caracteres').required('Requerido'),
+      whatsapp_phone: Yup.string().required('Requerido'),
       assign_to_me: Yup.boolean(),
       admin_email: Yup.string().when('assign_to_me', {
         is: false,
@@ -530,6 +535,18 @@ const BusinessesView = () => {
                   value={formik.values.owner_name} 
                 />
                 {formik.touched.owner_name && formik.errors.owner_name ? <div className="text-red-500 text-xs mt-1">{formik.errors.owner_name}</div> : null}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Teléfono de WhatsApp</label>
+                <input 
+                  type="text" 
+                  name="whatsapp_phone" 
+                  className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500" 
+                  onChange={formik.handleChange} 
+                  value={formik.values.whatsapp_phone} 
+                  placeholder="+1234567890"
+                />
+                {formik.touched.whatsapp_phone && formik.errors.whatsapp_phone ? <div className="text-red-500 text-xs mt-1">{formik.errors.whatsapp_phone}</div> : null}
               </div>
               <div>
                 <label className="flex items-center gap-2 mb-4">
@@ -820,6 +837,18 @@ const BusinessesView = () => {
                   value={editFormik.values.owner_name} 
                 />
                 {editFormik.touched.owner_name && editFormik.errors.owner_name ? <div className="text-red-500 text-xs mt-1">{editFormik.errors.owner_name}</div> : null}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1">Teléfono de WhatsApp</label>
+                <input 
+                  type="text" 
+                  name="whatsapp_phone" 
+                  className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  onChange={editFormik.handleChange} 
+                  value={editFormik.values.whatsapp_phone} 
+                />
+                {editFormik.touched.whatsapp_phone && editFormik.errors.whatsapp_phone ? <div className="text-red-500 text-xs mt-1">{editFormik.errors.whatsapp_phone}</div> : null}
               </div>
 
               <div>

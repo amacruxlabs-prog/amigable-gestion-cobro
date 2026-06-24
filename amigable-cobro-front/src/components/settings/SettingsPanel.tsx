@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Settings, Save, ArrowUp, ArrowDown, ShieldCheck, Power, Bot, CreditCard, Bell } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useUI } from '../../contexts/UIContext';
+import { ApiEntitiesPanel } from './ApiEntitiesPanel';
 
 interface AiModel {
   id: string;
@@ -146,6 +147,14 @@ export const SettingsPanel = ({
         >
           <Bot className="w-4 h-4" /> Motores IA
         </button>
+        {isSuperadmin && (
+          <button 
+            onClick={() => setActiveTab('integrations')}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'integrations' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+          >
+            <ShieldCheck className="w-4 h-4" /> Integraciones API
+          </button>
+        )}
         <button 
           onClick={() => setActiveTab('billing')}
           className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'billing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
@@ -265,6 +274,10 @@ export const SettingsPanel = ({
               </button>
             </div>
           </div>
+        )}
+
+        {activeTab === 'integrations' && isSuperadmin && (
+          <ApiEntitiesPanel />
         )}
 
         {activeTab === 'billing' && (

@@ -13,6 +13,7 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { AppLayout, NoPemissionsScreen } from './components/layout/AppLayout';
 import { TeamPanel } from './components/team/TeamPanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
+import { ApiDocs } from './components/docs/ApiDocs';
 import { useAuth } from './contexts/AuthContext';
 import { useTransactions } from './hooks/useTransactions';
 import {
@@ -85,6 +86,7 @@ export default function App() {
   if (!user) {
     return (
       <Routes>
+        <Route path="/docs" element={<ApiDocs />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -100,6 +102,7 @@ export default function App() {
   if (isOrphanSuperadmin) {
     return (
       <Routes>
+        <Route path="/docs" element={<ApiDocs />} />
         <Route path="/login" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/superadmin/*" element={<Navigate to="/admin/dashboard" replace />} />
@@ -128,6 +131,9 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Navigate to="/panel/dashboard" replace />} />
       <Route path="/" element={<Navigate to="/panel/dashboard" replace />} />
+      
+      {/* Docs */}
+      <Route path="/docs" element={<ApiDocs />} />
       
       {/* Rutas de Superadmin */}
       <Route path="/admin/*" element={

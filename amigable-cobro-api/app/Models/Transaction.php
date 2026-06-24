@@ -20,4 +20,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(Business::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'transaction_id');
+    }
 }

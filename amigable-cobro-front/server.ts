@@ -247,6 +247,7 @@ ${csvText.substring(0, 4000)}`;
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
+    app.get("/docs", (req, res) => { res.sendFile(path.join(process.cwd(), "docs.html")); });
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

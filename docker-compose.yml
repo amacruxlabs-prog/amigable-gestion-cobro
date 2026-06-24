@@ -40,14 +40,12 @@ services:
   front:
     build:
       context: ./amigable-cobro-front
+      args:
+        - VITE_API_URL=https://api-amigablecobro.amacruxlab.com/api
       dockerfile: Dockerfile
     image: amigable-cobro-front
     container_name: amigable-cobro-front
     restart: unless-stopped
-    working_dir: /usr/src/app
-    volumes:
-      - ./amigable-cobro-front:/usr/src/app
-      - /usr/src/app/node_modules
     networks:
       - amigable-network
     depends_on:
@@ -57,8 +55,8 @@ services:
     environment:
       - PORT=3003
       - BACKEND_URL=http://app:8000
-      - NODE_ENV=development
-    command: npm run dev:server
+      - NODE_ENV=production
+    command: npm run start
 
 networks:
   amigable-network:

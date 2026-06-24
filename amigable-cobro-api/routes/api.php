@@ -92,7 +92,7 @@ Route::prefix('v1')->group(function () {
             'success' => true,
             'data' => \Illuminate\Support\Facades\DB::table('businesses')
                 ->where('status', 'ACTIVE')
-                ->select('id', 'name', 'whatsapp_phone')
+                ->select('uuid', 'name', 'whatsapp_phone')
                 ->get()
         ]);
     });

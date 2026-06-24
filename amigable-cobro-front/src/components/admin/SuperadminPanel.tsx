@@ -613,7 +613,7 @@ const BusinessesView = () => {
                   <h3 className="text-base font-bold text-slate-800">
                     Ficha y Resumen del Negocio: {selectedBusinessDetails.business.name}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">ID del Tenant: {selectedBusinessDetails.business.id}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">ID: {selectedBusinessDetails.business.id} | UUID: {selectedBusinessDetails.business.uuid}</p>
                 </div>
               </div>
               <button
@@ -637,6 +637,10 @@ const BusinessesView = () => {
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Administrador / Propietario</span>
                   <span className="font-bold text-slate-800 text-sm">{selectedBusinessDetails.business.owner_name}</span>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Teléfono de WhatsApp</span>
+                  <span className="font-mono text-sm text-slate-700">{selectedBusinessDetails.business.whatsapp_phone || "-"}</span>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Estado de Operación</span>

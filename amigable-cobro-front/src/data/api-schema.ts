@@ -2,7 +2,7 @@ export const apiSchema = {
   title: "Amigable Cobro API",
   version: "1.0.0",
   description: "API de integración diseñada para consumo eficiente por parte de agentes de IA (MCP) y plataformas de automatización. Todos los endpoints requieren autenticación mediante UUID y Token.",
-  baseUrl: "https://api.amigablecobro.com/api/v1",
+  baseUrl: "https://api-amigablecobro.amacruxlab.com/api/v1",
   authentication: {
     headers: [
       { name: "X-Entity-ID", description: "El UUID de la Entidad/Agente consumiendo el API." },

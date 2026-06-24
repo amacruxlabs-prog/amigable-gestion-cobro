@@ -24,23 +24,19 @@
     --yellow: #fbbf24;
     --yellow-bg: rgba(251, 191, 36, .1);
     --blue: #60a5fa;
+    --purple: #a78bfa;
     --radius: 10px;
     --radius-sm: 6px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
-
-  /* Header */
   .header { border-bottom: 1px solid var(--border); background: var(--surface); }
   .header-inner { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 1.5rem; }
-  .header-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
   .header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }
   .header h1 span { color: var(--accent); }
   .header .sub { color: var(--text2); font-size: .875rem; margin-top: .25rem; }
   .header .base { display: inline-flex; align-items: center; gap: .5rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .4rem .75rem; font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--accent); margin-top: .75rem; }
   .header .base svg { width: 14px; height: 14px; opacity: .6; }
-
-  /* Credentials */
   .creds { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
   .creds-field { flex: 1; min-width: 200px; }
   .creds-field label { display: block; font-size: .7rem; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .35rem; }
@@ -53,20 +49,14 @@
   .creds-status.ok { color: var(--green); }
   .creds-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
   .creds-status.ok .dot { background: var(--green); }
-
-  /* Container */
   .container { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
-
-  /* Section */
   section { margin-bottom: 2.5rem; }
   h2 { font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .5rem; }
   h2 .count { font-size: .75rem; color: var(--text3); font-weight: 400; background: var(--surface2); padding: .1rem .5rem; border-radius: 999px; }
-
-  /* Card */
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: .75rem; overflow: hidden; transition: border-color .15s; }
   .card:hover { border-color: var(--border2); }
-  .card-header { display: flex; align-items: center; gap: .75rem; padding: .9rem 1.1rem; cursor: pointer; user-select: none; -webkit-user-select: none; }
-  .card-header .method { font-size: .7rem; font-weight: 700; padding: .2rem .55rem; border-radius: 4px; text-transform: uppercase; letter-spacing: .03em; line-height: 1.3; }
+  .card-header { display: flex; align-items: center; gap: .75rem; padding: .9rem 1.1rem; cursor: pointer; user-select: none; }
+  .card-header .method { font-size: .7rem; font-weight: 700; padding: .2rem .55rem; border-radius: 4px; text-transform: uppercase; line-height: 1.3; }
   .method.get { background: rgba(96, 165, 250, .12); color: var(--blue); }
   .method.post { background: rgba(52, 211, 153, .12); color: var(--green); }
   .method.put { background: rgba(251, 191, 36, .12); color: var(--yellow); }
@@ -75,9 +65,11 @@
   .card-header .chevron.open { transform: rotate(180deg); }
   .card-body { padding: 0 1.1rem 1.1rem; display: none; }
   .card-body.open { display: block; }
-  .card-body > p { color: var(--text2); font-size: .85rem; line-height: 1.6; margin-bottom: 1rem; }
-
-  /* Table */
+  .card-body > p { color: var(--text2); font-size: .85rem; line-height: 1.6; margin-bottom: .75rem; }
+  .desc-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .85rem 1rem; margin-bottom: 1rem; }
+  .desc-box .label { font-size: .65rem; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
+  .desc-box p { color: var(--text2); font-size: .82rem; line-height: 1.6; }
+  .desc-box p strong { color: var(--text); }
   .param-table { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .82rem; }
   .param-table th { text-align: left; padding: .5rem .6rem; color: var(--text3); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); }
   .param-table td { padding: .5rem .6rem; border-bottom: 1px solid var(--border); color: var(--text2); }
@@ -85,18 +77,15 @@
   .tag { display: inline-block; padding: .1rem .4rem; border-radius: 4px; font-size: .65rem; font-weight: 600; }
   .tag.req { background: var(--red-bg); color: var(--red); }
   .tag.opt { background: var(--green-bg); color: var(--green); }
-
-  /* Try it */
   .try-section { border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem; }
   .try-section .params { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
   .try-section .params input, .try-section .params select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .55rem .75rem; color: var(--text); font-size: .82rem; font-family: 'JetBrains Mono', monospace; flex: 1; min-width: 160px; outline: none; transition: border-color .15s; }
   .try-section .params input:focus, .try-section .params select:focus { border-color: var(--accent); }
   .try-section .params input::placeholder { color: var(--text3); }
-  .try-section .params select { cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6488' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .6rem center; padding-right: 2rem; }
+  .try-section .params select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6488' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .6rem center; padding-right: 2rem; }
   .try-section .params select option { background: var(--surface); }
   .try-section .params textarea { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem; color: var(--text); font-size: .82rem; font-family: 'JetBrains Mono', monospace; width: 100%; outline: none; resize: vertical; min-height: 100px; transition: border-color .15s; }
   .try-section .params textarea:focus { border-color: var(--accent); }
-
   .try-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
   .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: var(--radius-sm); font-size: .8rem; font-weight: 600; cursor: pointer; transition: all .15s; border: none; font-family: inherit; }
   .btn-primary { background: var(--accent); color: #fff; }
@@ -108,8 +97,6 @@
   .btn.loading .spinner { display: block; }
   .btn.loading .btn-text { display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Response */
   .resp { margin-top: .75rem; border-radius: var(--radius-sm); overflow: hidden; display: none; }
   .resp-header { display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; background: var(--bg); border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius-sm) var(--radius-sm) 0 0; font-size: .75rem; color: var(--text3); }
   .resp-header .status-badge { font-weight: 700; padding: .1rem .5rem; border-radius: 4px; font-size: .7rem; }
@@ -124,41 +111,29 @@
   .resp-body .bool { color: #c4b5fd; }
   .resp-body .null { color: var(--text3); }
   .resp-body .bracket { color: var(--text3); }
-
-  /* Pre/code for examples */
   pre.code-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: .82rem; line-height: 1.6; margin: .75rem 0; color: var(--text2); }
   .inline-code { font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--accent); }
-
-  /* Footer */
   .footer { text-align: center; padding: 2rem; color: var(--text3); font-size: .8rem; border-top: 1px solid var(--border); margin-top: 2rem; }
 
-  @media (max-width: 640px) {
-    .header h1 { font-size: 1.25rem; }
-    .creds { flex-direction: column; }
-    .creds-field { min-width: 0; }
-    .container { padding: 1rem; }
-    .try-section .params { flex-direction: column; }
-    .try-section .params input, .try-section .params select { min-width: 0; }
-  }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: .75rem 0; }
+  .info-grid .info-item { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem; }
+  .info-grid .info-item .info-label { font-size: .65rem; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; }
+  .info-grid .info-item .info-value { font-size: .85rem; color: var(--text); margin-top: .25rem; font-family: 'JetBrains Mono', monospace; }
+  @media (max-width: 640px) { .header h1 { font-size: 1.25rem; } .creds { flex-direction: column; } .creds-field { min-width: 0; } .container { padding: 1rem; } .try-section .params { flex-direction: column; } .try-section .params input, .try-section .params select { min-width: 0; } .info-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="header">
   <div class="header-inner">
-    <div class="header-top">
-      <div>
-        <h1>Amigable <span>Cobro</span> · API</h1>
-        <div class="sub">Documentación interactiva para integración de agentes y sistemas externos</div>
-      </div>
+    <div>
+      <h1>Amigable <span>Cobro</span> · API</h1>
+      <div class="sub">Documentación interactiva para integración de agentes de cobranza y sistemas externos</div>
     </div>
     <div class="base">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
       https://api-amigablecobro.amacruxlab.com/api/v1
     </div>
-
-    <!-- Credentials -->
     <div class="creds">
       <div class="creds-field">
         <label>X-Entity-ID</label>
@@ -184,19 +159,66 @@
 
 <div class="container">
 
-<!-- Quick reference note -->
 <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:2rem;display:flex;align-items:flex-start;gap:.75rem;">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
   <div style="font-size:.85rem;color:var(--text2);line-height:1.6;">
-    Las credenciales se envían automáticamente en cada petición.
-    Haz clic en cualquier endpoint para expandirlo y probarlo con datos reales.
-    <strong style="color:var(--text);">Los campos marcados con * son obligatorios.</strong>
+    Haz clic en cualquier endpoint para expandirlo. Verás la descripción, los parámetros que recibe, la estructura de la respuesta, y podrás probarlo con datos reales usando el botón <strong style="color:var(--text);">Probar</strong>.
+    Las credenciales se envían automáticamente. También puedes copiar el comando cURL equivalente.
   </div>
 </div>
 
-<!-- Public -->
+<!-- ==================== AUTH ==================== -->
+<section>
+  <h2>Autenticación</h2>
+  <p style="color:var(--text2);font-size:.85rem;margin-bottom:1rem;">
+    Todos los endpoints requieren autenticación excepto <span class="inline-code">/public/businesses</span>.
+    Debes enviar <strong style="color:var(--text);">dos headers</strong> en cada petición.
+  </p>
+
+  <div class="info-grid">
+    <div class="info-item">
+      <div class="info-label">Header</div>
+      <div class="info-value">X-Entity-ID</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Valor</div>
+      <div class="info-value">UUID v4</div>
+    </div>
+    <div class="info-item" style="grid-column:span 2;">
+      <div class="info-label">Descripción</div>
+      <div style="font-size:.82rem;color:var(--text2);margin-top:.25rem;line-height:1.6;">
+        Identificador único de la entidad o agente autorizado. Se obtiene al registrar un agente en el panel SuperAdmin (<span class="inline-code">/superadmin/api-entities</span>). Cada agente tiene su propio UUID que lo identifica ante el sistema.
+      </div>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-item">
+      <div class="info-label">Header</div>
+      <div class="info-value">Authorization</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Valor</div>
+      <div class="info-value">Bearer {token}</div>
+    </div>
+    <div class="info-item" style="grid-column:span 2;">
+      <div class="info-label">Descripción</div>
+      <div style="font-size:.82rem;color:var(--text2);margin-top:.25rem;line-height:1.6;">
+        Token de acceso generado desde el panel SuperAdmin. El token puede tener fecha de expiración. También puede enviarse como <span class="inline-code">X-API-Key</span> como alternativa. Si el token expira, deberás generar uno nuevo desde el panel.
+      </div>
+    </div>
+  </div>
+
+  <pre class="code-block">curl -sk "https://api-amigablecobro.amacruxlab.com/api/v1/collections?business_uuid=b206bc66-..." \
+  -H "X-Entity-ID: 779d1ab2-..." \
+  -H "Authorization: Bearer 81381ab9..." \
+  -H "Accept: application/json"</pre>
+</section>
+
+<!-- ==================== PUBLIC ==================== -->
 <section>
   <h2>Directorio Público <span class="count">1</span></h2>
+
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method get">GET</span>
@@ -204,10 +226,27 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Obtiene todos los negocios activos con su UUID, nombre y WhatsApp. No requiere autenticación.</p>
-      <pre class="code-block">[
-  { "uuid": "b206bc66-...", "name": "Mi Negocio", "whatsapp_phone": "+584241234567" }
-]</pre>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Obtiene el listado de todos los negocios activos registrados en la plataforma. Cada negocio incluye su <strong>UUID</strong> (necesario para el resto de endpoints), <strong>nombre comercial</strong> y <strong>teléfono de WhatsApp</strong>.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Para qué sirve?</div>
+        <p>Es el <strong>primer paso</strong> para cualquier integración. Llama a este endpoint para descubrir qué negocios están disponibles y obtener su <span class="inline-code">uuid</span>, que usarás como <span class="inline-code">business_uuid</span> en todas las demás peticiones.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">Autenticación</div>
+        <p><strong style="color:var(--green);">No requiere</strong> — es un endpoint público.</p>
+      </div>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Respuesta</h3>
+      <table class="param-table">
+        <tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr>
+        <tr><td>uuid</td><td>string</td><td>UUID del negocio. Úsalo como <span class="inline-code">business_uuid</span> en los demás endpoints.</td></tr>
+        <tr><td>name</td><td>string</td><td>Nombre comercial del negocio (ej: "Club Árabe de Maturín").</td></tr>
+        <tr><td>whatsapp_phone</td><td>string|null</td><td>Número de teléfono de WhatsApp asociado al negocio.</td></tr>
+      </table>
+
       <div class="try-section" data-method="GET" data-ep="/public/businesses" data-auth="false">
         <div class="try-actions">
           <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
@@ -218,10 +257,11 @@
   </div>
 </section>
 
-<!-- Collections -->
+<!-- ==================== COLLECTIONS ==================== -->
 <section>
   <h2>Colecciones <span class="count">5</span></h2>
 
+  <!-- GET /collections -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method get">GET</span>
@@ -229,17 +269,50 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Lista todas las cuentas por cobrar de un negocio, con paginación y filtros.</p>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Lista todas las cuentas por cobrar (transacciones) de un negocio. Retorna resultados <strong>paginados</strong> (30 por página) ordenados por fecha de creación descendente (más recientes primero).</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Para obtener el <strong>listado completo de deudores</strong> de un negocio, consultar el estado de cada cuenta, y filtrar por estado de pago (<span class="inline-code">PENDING</span> o <span class="inline-code">PAID</span>).</p>
+      </div>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Parámetros (query string)</h3>
       <table class="param-table">
         <tr><th>Parámetro</th><th>Tipo</th><th></th><th>Descripción</th></tr>
-        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
-        <tr><td>status</td><td>string</td><td><span class="tag opt">opt</span></td><td>PENDING, PAID</td></tr>
-        <tr><td>page</td><td>int</td><td><span class="tag opt">opt</span></td><td>Número de página</td></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio (obtenido de <span class="inline-code">/public/businesses</span>)</td></tr>
+        <tr><td>status</td><td>string</td><td><span class="tag opt">opt</span></td><td>Filtrar por estado: <span class="inline-code">PENDING</span> (pendiente) o <span class="inline-code">PAID</span> (pagado)</td></tr>
+        <tr><td>page</td><td>int</td><td><span class="tag opt">opt</span></td><td>Número de página para paginación (empieza en 1). Por defecto: 1</td></tr>
       </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Respuesta</h3>
+      <pre class="code-block">{
+  "success": true,
+  "data": [
+    {
+      "id": 1,                    // ID interno de la transacción
+      "client_name": "Juan Pérez", // Nombre del deudor
+      "client_phone": "+584241234567", // Teléfono
+      "client_document": "V12345678", // Cédula o RIF
+      "total_amount": 250.00,      // Monto total de la deuda
+      "paid_amount": 50.00,        // Monto pagado hasta ahora
+      "status": "PENDING",         // Estado actual
+      "due_date": "2026-08-15T00:00:00Z",  // Fecha de vencimiento
+      "created_at": "2026-06-24T12:00:00Z" // Fecha de creación
+    }
+  ],
+  "meta": {
+    "total": 50,        // Total de transacciones
+    "current_page": 1,  // Página actual
+    "last_page": 5      // Última página disponible
+  }
+}</pre>
+
       <div class="try-section" data-method="GET" data-ep="/collections" data-auth="true">
         <div class="params">
           <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
-          <input type="text" class="p" data-name="status" placeholder="status (opcional)">
+          <input type="text" class="p" data-name="status" placeholder="status: PENDING | PAID">
         </div>
         <div class="try-actions">
           <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
@@ -250,6 +323,7 @@
     </div>
   </div>
 
+  <!-- POST /collections -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method post">POST</span>
@@ -257,10 +331,38 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Crea una nueva cuenta por cobrar.</p>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Registra una <strong>nueva cuenta por cobrar</strong> en el sistema. Crea una transacción con estado inicial <span class="inline-code">PENDING</span> y monto pagado en cero.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Cuando un negocio <strong>emite una nueva deuda</strong> a un cliente. Por ejemplo: una membresía, un servicio prestado a crédito, o una cuota pendiente. El sistema automáticamente asigna estado <span class="inline-code">PENDING</span>.</p>
+      </div>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Cuerpo de la petición (JSON)</h3>
+      <table class="param-table">
+        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio al que pertenece la cuenta</td></tr>
+        <tr><td>client_name</td><td>string</td><td><span class="tag req">req</span></td><td>Nombre completo del cliente o deudor</td></tr>
+        <tr><td>client_phone</td><td>string</td><td><span class="tag opt">opt</span></td><td>Teléfono del cliente (formato internacional: +584241234567)</td></tr>
+        <tr><td>client_document</td><td>string</td><td><span class="tag opt">opt</span></td><td>Cédula de identidad o RIF del cliente</td></tr>
+        <tr><td>total_amount</td><td>float</td><td><span class="tag req">req</span></td><td>Monto total de la deuda en bolívares o dólares</td></tr>
+        <tr><td>due_date</td><td>string</td><td><span class="tag req">req</span></td><td>Fecha de vencimiento en formato ISO 8601 (<span class="inline-code">2026-08-15T00:00:00Z</span>)</td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Respuesta (201 Created)</h3>
+      <pre class="code-block">{
+  "success": true,
+  "message": "Cuenta creada",
+  "data": {
+    "id": 10  // ID de la nueva transacción creada
+  }
+}</pre>
+
       <div class="try-section" data-method="POST" data-ep="/collections" data-auth="true">
         <div class="params">
-          <textarea class="p" data-name="body" rows="6">{
+          <textarea class="p" data-name="body" rows="7">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "client_name": "Juan Pérez",
   "client_phone": "+584140000000",
@@ -278,6 +380,7 @@
     </div>
   </div>
 
+  <!-- GET /collections/{id} -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method get">GET</span>
@@ -285,7 +388,53 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Obtiene una cuenta específica con sus pagos asociados.</p>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Obtiene el <strong>detalle completo</strong> de una cuenta por cobrar específica, incluyendo el <strong>historial de pagos</strong> registrados. Útil para conocer el estado actualizado de una deuda.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Cuando necesitas <strong>consultar el estado detallado</strong> de una cuenta en particular: saber cuánto se ha pagado, qué método de pago se usó, y el historial completo de abonos.</p>
+      </div>
+
+      <table class="param-table">
+        <tr><th>Parámetro</th><th>Ubicación</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>id</td><td>URL (path)</td><td>int</td><td><span class="tag req">req</span></td><td>ID de la transacción a consultar</td></tr>
+        <tr><td>business_uuid</td><td>query</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+      </table>
+
+      <p style="color:var(--text2);font-size:.82rem;margin-top:.75rem;">
+        La respuesta incluye los mismos campos que <span class="inline-code">GET /collections</span> más un array <span class="inline-code">payments</span> con cada pago registrado.
+      </p>
+      <pre class="code-block">{
+  "success": true,
+  "data": {
+    "id": 1,
+    "client_name": "Juan Pérez",
+    "client_phone": "+584241234567",
+    "client_document": "V12345678",
+    "total_amount": 250.00,
+    "paid_amount": 150.00,
+    "status": "PARTIAL",
+    "due_date": "2026-08-15T00:00:00Z",
+    "created_at": "2026-06-24T12:00:00Z",
+    "payments": [
+      {
+        "id": 1,
+        "amount": 100.00,
+        "payment_method": "TRANSFER",
+        "payment_date": "2026-06-24T14:30:00Z"
+      },
+      {
+        "id": 2,
+        "amount": 50.00,
+        "payment_method": "CASH",
+        "payment_date": "2026-07-01T10:00:00Z"
+      }
+    ]
+  }
+}</pre>
+
       <div class="try-section" data-method="GET" data-ep="/collections/" data-auth="true" data-suffix="">
         <div class="params">
           <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
@@ -300,6 +449,7 @@
     </div>
   </div>
 
+  <!-- POST /collections/{id}/payments -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method post">POST</span>
@@ -307,13 +457,46 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Registra un pago parcial o total a una cuenta.</p>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Registra un <strong>pago parcial o total</strong> a una cuenta por cobrar existente. El sistema <strong>actualiza automáticamente</strong> el monto pagado y, si el total pagado alcanza o supera el monto total, cambia el estado a <span class="inline-code">PAID</span>.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Cuando un cliente <strong>realiza un abono</strong> a su deuda. Puedes registrar pagos parciales (ej: abono de Bs. 50 en una deuda de Bs. 250) o pagos completos. El sistema lleva el control del saldo restante automáticamente.</p>
+      </div>
+
+      <table class="param-table">
+        <tr><th>Parámetro</th><th>Ubicación</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>id</td><td>URL (path)</td><td>int</td><td><span class="tag req">req</span></td><td>ID de la transacción a la que se aplica el pago</td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Cuerpo de la petición (JSON)</h3>
+      <table class="param-table">
+        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+        <tr><td>amount</td><td>float</td><td><span class="tag req">req</span></td><td>Monto del pago (debe ser mayor a 0)</td></tr>
+        <tr><td>payment_method</td><td>string</td><td><span class="tag req">req</span></td><td>Método de pago: <span class="inline-code">CASH</span>, <span class="inline-code">TRANSFER</span>, <span class="inline-code">POS</span>, <span class="inline-code">ZELLE</span>, <span class="inline-code">PAYPAL</span>, <span class="inline-code">OTHER</span></td></tr>
+        <tr><td>payment_date</td><td>string</td><td><span class="tag opt">opt</span></td><td>Fecha del pago en ISO 8601. Si no se envía, se usa la fecha/hora actual.</td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Respuesta</h3>
+      <pre class="code-block">{
+  "success": true,
+  "message": "Pago registrado",
+  "data": {
+    "new_paid_amount": 150.00,  // Nuevo total pagado acumulado
+    "new_status": "PARTIAL"      // Estado actualizado de la cuenta
+  }
+}
+<span style="color:var(--text3);">// Posibles errores:</span>
+<span style="color:var(--red);">// 400 - "La cuenta ya está pagada" (status = PAID)</span>
+<span style="color:var(--red);">// 404 - "Transacción no encontrada"</span></pre>
+
       <div class="try-section" data-method="POST" data-ep="/collections/" data-auth="true" data-suffix="/payments">
-        <div class="params">
-          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1" style="width:100%;">
-        </div>
-        <div class="params" style="margin-top:.5rem;">
-          <textarea class="p" data-name="body" rows="5">{
+        <div class="params" style="flex-direction:column;">
+          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
+          <textarea class="p" data-name="body" rows="6" style="margin-top:.5rem;">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "amount": 100.00,
   "payment_method": "TRANSFER",
@@ -329,6 +512,7 @@
     </div>
   </div>
 
+  <!-- PUT /collections/{id}/status -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method put">PUT</span>
@@ -336,13 +520,45 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Actualiza el estado de una cuenta: <span class="inline-code">PENDING</span>, <span class="inline-code">PAID</span>, <span class="inline-code">OVERDUE</span>, <span class="inline-code">CANCELLED</span>.</p>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Actualiza manualmente el <strong>estado</strong> de una cuenta por cobrar. Permite cambiar entre los estados disponibles sin necesidad de registrar un pago.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Para <strong>gestionar el ciclo de vida</strong> de una deuda: marcar como <span class="inline-code">PAID</span> cuando se cobró en efectivo fuera del sistema, como <span class="inline-code">OVERDUE</span> cuando venció, o <span class="inline-code">CANCELLED</span> si se anula. También para revertir a <span class="inline-code">PENDING</span> si es necesario.</p>
+      </div>
+
+      <table class="param-table">
+        <tr><th>Parámetro</th><th>Ubicación</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>id</td><td>URL (path)</td><td>int</td><td><span class="tag req">req</span></td><td>ID de la transacción</td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Estados disponibles</h3>
+      <table class="param-table">
+        <tr><th>Valor</th><th>Significado</th></tr>
+        <tr><td><span class="inline-code">PENDING</span></td><td>Pendiente por cobrar (estado inicial)</td></tr>
+        <tr><td><span class="inline-code">PAID</span></td><td>Pagada completamente</td></tr>
+        <tr><td><span class="inline-code">OVERDUE</span></td><td>Vencida / en mora</td></tr>
+        <tr><td><span class="inline-code">CANCELLED</span></td><td>Cancelada (ya no es exigible)</td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Cuerpo de la petición (JSON)</h3>
+      <table class="param-table">
+        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+        <tr><td>status</td><td>string</td><td><span class="tag req">req</span></td><td>Nuevo estado: <span class="inline-code">PENDING</span>, <span class="inline-code">PAID</span>, <span class="inline-code">OVERDUE</span>, <span class="inline-code">CANCELLED</span></td></tr>
+      </table>
+
+      <pre class="code-block">{
+  "success": true,
+  "message": "Estado actualizado"
+}</pre>
+
       <div class="try-section" data-method="PUT" data-ep="/collections/" data-auth="true" data-suffix="/status">
-        <div class="params">
-          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1" style="width:100%;">
-        </div>
-        <div class="params" style="margin-top:.5rem;">
-          <textarea class="p" data-name="body" rows="4">{
+        <div class="params" style="flex-direction:column;">
+          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
+          <textarea class="p" data-name="body" rows="5" style="margin-top:.5rem;">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "status": "PAID"
 }</textarea>
@@ -357,7 +573,7 @@
   </div>
 </section>
 
-<!-- Analytics -->
+<!-- ==================== ANALYTICS ==================== -->
 <section>
   <h2>Estadísticas <span class="count">1</span></h2>
   <div class="card">
@@ -367,12 +583,38 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Indicadores clave: montos emitidos, cobrados, pendientes y tasa de cobranza.</p>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Obtiene los <strong>indicadores clave de rendimiento (KPIs)</strong> de un negocio: total emitido, total cobrado, saldo pendiente, tasa de cobranza, y conteo de cuentas activas vs pagadas.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Para <strong>dashboard y reportes</strong>. Útil para mostrar en tiempo real la salud financiera del negocio: cuánto se ha facturado, cuánto se ha cobrado, y la eficiencia de cobranza en un período específico.</p>
+      </div>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Parámetros (query string)</h3>
+      <table class="param-table">
+        <tr><th>Parámetro</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+        <tr><td>period</td><td>string</td><td><span class="tag opt">opt</span></td><td>Período de análisis: <span class="inline-code">today</span>, <span class="inline-code">this_week</span>, <span class="inline-code">this_month</span> (default), <span class="inline-code">this_year</span>, <span class="inline-code">all_time</span></td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Respuesta</h3>
+      <table class="param-table">
+        <tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr>
+        <tr><td>total_emitted</td><td>float</td><td>Suma total de montos emitidos (facturados)</td></tr>
+        <tr><td>total_collected</td><td>float</td><td>Suma total de montos cobrados</td></tr>
+        <tr><td>total_pending</td><td>float</td><td>Monto pendiente por cobrar (<span class="inline-code">total_emitted - total_collected</span>)</td></tr>
+        <tr><td>collection_rate</td><td>float</td><td>Porcentaje de eficiencia de cobranza (0-100)</td></tr>
+        <tr><td>active_accounts</td><td>int</td><td>Cuentas activas con estado pendiente</td></tr>
+        <tr><td>paid_accounts</td><td>int</td><td>Cuentas pagadas completamente</td></tr>
+      </table>
+
       <div class="try-section" data-method="GET" data-ep="/analytics/kpis" data-auth="true">
         <div class="params">
           <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
           <select class="p" data-name="period">
-            <option value="">Periodo</option>
+            <option value="">Periodo (opcional)</option>
             <option value="today">Hoy</option>
             <option value="this_week">Esta semana</option>
             <option value="this_month" selected>Este mes</option>
@@ -390,7 +632,7 @@
   </div>
 </section>
 
-<!-- Calendar -->
+<!-- ==================== CALENDAR ==================== -->
 <section>
   <h2>Calendario <span class="count">1</span></h2>
   <div class="card">
@@ -400,7 +642,43 @@
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
-      <p>Eventos de cobro agrupados por día para un mes específico.</p>
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Obtiene los <strong>eventos de cobro agrupados por día</strong> para un mes y año específicos. Cada día incluye el total esperado, total cobrado, y la lista de transacciones con sus montos y estados.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Para <strong>visualizar en un calendario</strong> los vencimientos y cobros de cada día. Ideal para que el negocio sepa qué días tiene más cuentas por cobrar y planifique su gestión de cobranza.</p>
+      </div>
+
+      <table class="param-table">
+        <tr><th>Parámetro</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+        <tr><td>month</td><td>int</td><td><span class="tag req">req</span></td><td>Mes (1-12)</td></tr>
+        <tr><td>year</td><td>int</td><td><span class="tag req">req</span></td><td>Año (ej: 2026)</td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Respuesta</h3>
+      <pre class="code-block">{
+  "success": true,
+  "data": [
+    {
+      "date": "2026-06-15",              // Día del evento
+      "total_expected": 500.00,           // Total esperado para este día
+      "total_collected": 200.00,          // Total cobrado hasta ahora
+      "events": [                         // Transacciones de este día
+        {
+          "transaction_id": 5,
+          "client_name": "María García",
+          "amount": 500.00,
+          "status": "PARTIAL"
+        }
+      ]
+    }
+  ]
+}
+<span style="color:var(--text3);">// Si no hay eventos en un mes, retorna un array vacío.</span></pre>
+
       <div class="try-section" data-method="GET" data-ep="/calendar/events" data-auth="true">
         <div class="params">
           <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
@@ -417,37 +695,38 @@
   </div>
 </section>
 
-<!-- Status codes -->
+<!-- ==================== ERROR CODES ==================== -->
 <section>
   <h2>Códigos de Estado HTTP</h2>
   <table class="param-table">
-    <tr><th>Código</th><th>Significado</th></tr>
-    <tr><td>200</td><td>Operación exitosa</td></tr>
-    <tr><td>201</td><td>Recurso creado exitosamente</td></tr>
-    <tr><td>400</td><td>Solicitud incorrecta (ej: cuenta ya pagada)</td></tr>
-    <tr><td>401</td><td>Credenciales faltantes, inválidas o expiradas</td></tr>
-    <tr><td>403</td><td>Entidad inactiva o sin permisos</td></tr>
-    <tr><td>404</td><td>Recurso no encontrado</td></tr>
-    <tr><td>422</td><td>Error de validación — revisa los campos enviados</td></tr>
-    <tr><td>500</td><td>Error interno del servidor</td></tr>
+    <tr><th>Código</th><th>Significado</th><th>Posible causa</th></tr>
+    <tr><td>200</td><td>Operación exitosa</td><td>La petición se procesó correctamente</td></tr>
+    <tr><td>201</td><td>Creado exitosamente</td><td>El recurso fue creado (POST /collections)</td></tr>
+    <tr><td>400</td><td>Solicitud incorrecta</td><td>Ej: intentar pagar una cuenta ya pagada</td></tr>
+    <tr><td>401</td><td>No autorizado</td><td>Falta X-Entity-ID o Bearer, o son inválidos/expirados</td></tr>
+    <tr><td>403</td><td>Prohibido</td><td>La entidad API fue desactivada desde el panel</td></tr>
+    <tr><td>404</td><td>No encontrado</td><td>El recurso solicitado no existe (ID incorrecto)</td></tr>
+    <tr><td>422</td><td>Error de validación</td><td>Falta un campo requerido o el formato es inválido</td></tr>
+    <tr><td>500</td><td>Error interno</td><td>Error del servidor. Contactar al administrador.</td></tr>
   </table>
 </section>
 
-<!-- Payment methods -->
+<!-- ==================== PAYMENT METHODS ==================== -->
 <section>
   <h2>Métodos de Pago</h2>
+  <p style="color:var(--text2);font-size:.85rem;margin-bottom:.75rem;">Usa estos valores en el campo <span class="inline-code">payment_method</span> del endpoint <span class="inline-code">POST /collections/{id}/payments</span>.</p>
   <table class="param-table">
-    <tr><th>Valor</th><th>Descripción</th></tr>
-    <tr><td><span class="inline-code">CASH</span></td><td>Efectivo</td></tr>
-    <tr><td><span class="inline-code">TRANSFER</span></td><td>Transferencia bancaria</td></tr>
-    <tr><td><span class="inline-code">POS</span></td><td>Punto de venta / tarjeta</td></tr>
-    <tr><td><span class="inline-code">ZELLE</span></td><td>Zelle</td></tr>
-    <tr><td><span class="inline-code">PAYPAL</span></td><td>PayPal</td></tr>
-    <tr><td><span class="inline-code">OTHER</span></td><td>Otro</td></tr>
+    <tr><th>Valor</th><th>Descripción</th><th>Uso típico</th></tr>
+    <tr><td><span class="inline-code">CASH</span></td><td>Efectivo</td><td>Pago en persona con dinero físico</td></tr>
+    <tr><td><span class="inline-code">TRANSFER</span></td><td>Transferencia bancaria</td><td>Depósito o transferencia entre cuentas</td></tr>
+    <tr><td><span class="inline-code">POS</span></td><td>Punto de venta</td><td>Pago con tarjeta de débito/crédito</td></tr>
+    <tr><td><span class="inline-code">ZELLE</span></td><td>Zelle</td><td>Pago internacional vía Zelle</td></tr>
+    <tr><td><span class="inline-code">PAYPAL</span></td><td>PayPal</td><td>Pago internacional vía PayPal</td></tr>
+    <tr><td><span class="inline-code">OTHER</span></td><td>Otro</td><td>Cualquier otro método no listado</td></tr>
   </table>
 </section>
 
-<div class="footer">Amigable Cobro API · Documentación interactiva · v1.0.0</div>
+<div class="footer">Amigable Cobro API · Documentación interactiva para agentes de cobranza · v1.0.0</div>
 </div>
 
 <script>
@@ -470,30 +749,18 @@ function getCreds() {
 function setCredsStatus(ok, msg) {
   const el = document.getElementById('creds-status');
   el.className = 'creds-status' + (ok ? ' ok' : '');
-  el.innerHTML = `<span class="dot"></span><span>${msg || (ok ? 'Credenciales OK' : 'Configura las credenciales')}</span>`;
+  el.innerHTML = `<span class="dot"></span><span>${msg || (ok ? 'Credenciales OK' : 'Configura las credenciales arriba')}</span>`;
 }
 
 function highlightJSON(obj) {
   const json = JSON.stringify(obj, null, 2);
-  return json.replace(
-    /("(?:\\.|[^"\\])*")\s*:/g,
-    '<span class="key">$1</span>:'
-  ).replace(
-    /:\s*("(?:\\.|[^"\\])*")/g,
-    ': <span class="string">$1</span>'
-  ).replace(
-    /:\s*(\d+\.?\d*)/g,
-    ': <span class="number">$1</span>'
-  ).replace(
-    /:\s*(true|false)/g,
-    ': <span class="bool">$1</span>'
-  ).replace(
-    /:\s*(null)/g,
-    ': <span class="null">$1</span>'
-  ).replace(
-    /([\[\]\{\}])/g,
-    '<span class="bracket">$1</span>'
-  );
+  return json
+    .replace(/(?<=:)\s*"(?:\\.|[^"\\])*"/g, m => m.replace(/"([^"]*)"/g, '<span class="string">"$1"</span>'))
+    .replace(/(?<=:)\s*\d+\.?\d*/g, m => `<span class="number">${m.trim()}</span>`)
+    .replace(/(?<=:)\s*(true|false)/g, m => `<span class="bool">${m.trim()}</span>`)
+    .replace(/(?<=:)\s*null/g, '<span class="null">null</span>')
+    .replace(/"([^"]*)"\s*:/g, '<span class="key">"$1"</span>:')
+    .replace(/([\[\]\{\}])/g, '<span class="bracket">$1</span>');
 }
 
 async function tryIt(btn) {
@@ -503,37 +770,31 @@ async function tryIt(btn) {
   const auth = sec.dataset.auth === 'true';
   const suffix = sec.dataset.suffix || '';
   const respEl = sec.querySelector('.resp');
-
-  // Collect params
   const params = sec.querySelectorAll('.p');
-  let qs = [];
-  let body = null;
-  let pathId = '';
+  let qs = [], body = null, pathId = '';
 
   params.forEach(p => {
     const name = p.dataset.name;
     const val = p.value.trim();
     if (!val) return;
-    if (name === 'path') { pathId = val; }
+    if (name === 'path') pathId = val;
     else if (name === 'body') { try { body = JSON.parse(val); } catch(e) { body = val; } }
-    else { qs.push(encodeURIComponent(name) + '=' + encodeURIComponent(val)); }
+    else qs.push(encodeURIComponent(name) + '=' + encodeURIComponent(val));
   });
 
   let url = BASE + ep + pathId + suffix;
   if (qs.length) url += (url.includes('?') ? '&' : '?') + qs.join('&');
 
-  // Headers
   const headers = { 'Accept': 'application/json' };
   if (body) headers['Content-Type'] = 'application/json';
   if (auth) {
     const c = getCreds();
-    if (!c.entity || !c.token) { setCredsStatus(false, 'Completa las credenciales'); return; }
+    if (!c.entity || !c.token) { setCredsStatus(false, 'Completa las credenciales arriba'); return; }
     headers['X-Entity-ID'] = c.entity;
     headers['Authorization'] = 'Bearer ' + c.token;
     setCredsStatus(true, 'Credenciales OK');
   }
 
-  // Loading
   btn.classList.add('loading');
   btn.disabled = true;
   respEl.style.display = 'block';
@@ -542,20 +803,16 @@ async function tryIt(btn) {
   try {
     const opts = { method, headers };
     if (body) opts.body = JSON.stringify(body);
-
     const start = performance.now();
     const r = await fetch(url, opts);
     const ms = ((performance.now() - start) / 1000).toFixed(2);
     const ct = r.headers.get('content-type') || '';
     let data = ct.includes('json') ? await r.json() : await r.text();
     const formatted = typeof data === 'object' ? highlightJSON(data) : escapeHtml(data);
-    const ok = r.ok;
-    const statusColor = ok ? 'var(--green)' : 'var(--red)';
-
     respEl.innerHTML = `
       <div class="resp-header">
-        <span class="status-badge ${ok ? 'ok' : 'err'}" style="background:${ok ? 'var(--green-bg)' : 'var(--red-bg)'};color:${statusColor}">${r.status}</span>
-        <span style="color:var(--text3)">${r.statusText || (ok ? 'OK' : 'Error')}</span>
+        <span class="status-badge ${r.ok ? 'ok' : 'err'}" style="background:${r.ok ? 'var(--green-bg)' : 'var(--red-bg)'};color:${r.ok ? 'var(--green)' : 'var(--red)'}">${r.status}</span>
+        <span style="color:var(--text3)">${r.statusText || (r.ok ? 'OK' : 'Error')}</span>
         <span class="time">${ms}s</span>
       </div>
       <div class="resp-body"><pre>${formatted}</pre></div>
@@ -566,18 +823,6 @@ async function tryIt(btn) {
     btn.classList.remove('loading');
     btn.disabled = false;
   }
-}
-
-function buildCurl(method, url, headers, body) {
-  let curl = `curl -sk -X ${method} "${url}"`;
-  for (const [k, v] of Object.entries(headers)) {
-    curl += ` \\\n  -H "${k}: ${v}"`;
-  }
-  if (body) {
-    const str = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
-    curl += ` \\\n  -d '${str.replace(/'/g, "'\\''")}'`;
-  }
-  return curl;
 }
 
 async function copyCurl(btn) {
@@ -609,13 +854,19 @@ async function copyCurl(btn) {
     if (c.token) headers['Authorization'] = 'Bearer ' + c.token;
   }
 
-  const curl = buildCurl(method, url, headers, body);
+  let curl = `curl -sk -X ${method} "${url}"`;
+  for (const [k, v] of Object.entries(headers)) curl += ` \\\n  -H "${k}: ${v}"`;
+  if (body) {
+    const str = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+    curl += ` \\\n  -d '${str.replace(/'/g, "'\\''")}'`;
+  }
+
   try {
     await navigator.clipboard.writeText(curl);
     const orig = btn.textContent;
     btn.textContent = 'Copiado!';
     setTimeout(() => btn.textContent = orig, 1500);
-  } catch { /* fallback */ }
+  } catch {}
 }
 
 function escapeHtml(s) {
@@ -624,13 +875,12 @@ function escapeHtml(s) {
   return d.innerHTML;
 }
 
-// Update creds status on input
 document.getElementById('input-entity').addEventListener('input', checkCreds);
 document.getElementById('input-token').addEventListener('input', checkCreds);
 function checkCreds() {
   const c = getCreds();
   if (c.entity && c.token) setCredsStatus(true, 'Credenciales OK');
-  else setCredsStatus(false, 'Configura las credenciales');
+  else setCredsStatus(false, 'Configura las credenciales arriba');
 }
 checkCreds();
 </script>

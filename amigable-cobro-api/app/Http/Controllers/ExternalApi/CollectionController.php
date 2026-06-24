@@ -55,7 +55,7 @@ class CollectionController extends Controller
                 'total_amount' => (float) $t->total_amount,
                 'paid_amount' => (float) $t->paid_amount,
                 'status' => $t->status,
-                'due_date' => $t->created_at->toIso8601String(),
+                'due_date' => $t->due_date?->toIso8601String(),
                 'created_at' => $t->created_at->toIso8601String(),
             ]);
 
@@ -114,12 +114,13 @@ class CollectionController extends Controller
             'total_amount' => (float) $transaction->total_amount,
             'paid_amount' => (float) $transaction->paid_amount,
             'status' => $transaction->status,
-            'due_date' => $transaction->created_at->toIso8601String(),
+            'due_date' => $transaction->due_date?->toIso8601String(),
             'created_at' => $transaction->created_at->toIso8601String(),
             'payments' => $transaction->payments()->orderBy('created_at', 'desc')->get()->map(fn($p) => [
                 'id' => $p->id,
                 'amount' => (float) $p->amount,
-                'payment_date' => $p->created_at->toIso8601String(),
+                'payment_method' => $p->payment_method,
+                'payment_date' => $p->payment_date?->toIso8601String(),
             ]),
         ]);
     }
@@ -130,7 +131,7 @@ class CollectionController extends Controller
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'payment_method' => ['required', 'string', Rule::in(['CASH', 'TRANSFER', 'CARD', 'OTHER'])],
+            'payment_method' => ['required', 'string', Rule::in(['CASH', 'TRANSFER', 'POS', 'ZELLE', 'PAYPAL', 'OTHER'])],
             'payment_date' => 'nullable|date',
         ]);
 
@@ -170,7 +171,7 @@ class CollectionController extends Controller
         $business = $this->getBusinessFromUuid($request);
 
         $validated = $request->validate([
-            'status' => ['required', 'string', Rule::in(['PENDING', 'PAID', 'CANCELLED', 'UNCOLLECTIBLE'])],
+            'status' => ['required', 'string', Rule::in(['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'])],
         ]);
 
         $transaction = Transaction::where('id', $id)

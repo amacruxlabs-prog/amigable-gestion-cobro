@@ -1,379 +1,98 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>API - Amigable Cobro | Documentación</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid #334155; padding: 2rem 0; text-align: center; }
-  .header h1 { font-size: 2rem; color: #f8fafc; }
-  .header p { color: #94a3b8; margin-top: .5rem; }
-  .header .base-url { display: inline-block; background: #1e293b; padding: .5rem 1rem; border-radius: .5rem; font-family: monospace; color: #38bdf8; margin-top: .75rem; font-size: .9rem; border: 1px solid #334155; }
-  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-  section { margin-bottom: 2.5rem; }
-  h2 { font-size: 1.4rem; color: #f1f5f9; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 2px solid #334155; }
-  h3 { font-size: 1.1rem; color: #38bdf8; margin: 1.5rem 0 .75rem; }
-  .card { background: #1e293b; border-radius: .75rem; border: 1px solid #334155; margin-bottom: 1rem; overflow: hidden; }
-  .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: .75rem; font-weight: 600; }
-  .method { display: inline-block; padding: .2rem .6rem; border-radius: .3rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; min-width: 4rem; text-align: center; }
-  .method.get { background: #1e3a5f; color: #60a5fa; }
-  .method.post { background: #1e3a2f; color: #4ade80; }
-  .method.put { background: #3a2f1e; color: #fbbf24; }
-  .card-body { padding: 1.25rem; }
-  .card-body p { margin-bottom: .75rem; color: #cbd5e1; }
-  pre { background: #0f172a; padding: 1rem; border-radius: .5rem; overflow-x: auto; font-size: .85rem; line-height: 1.5; margin: .75rem 0; border: 1px solid #1e293b; }
-  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-  .inline-code { background: #0f172a; padding: .15rem .4rem; border-radius: .25rem; font-size: .85rem; color: #38bdf8; border: 1px solid #1e293b; }
-  .note { background: #172554; border-left: 4px solid #3b82f6; padding: 1rem; border-radius: .5rem; margin: 1rem 0; }
-  .note strong { color: #93c5fd; }
-  .warning { background: #3a2f1e; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: .5rem; margin: 1rem 0; }
-  .warning strong { color: #fcd34d; }
-  table { width: 100%; border-collapse: collapse; margin: .75rem 0; }
-  th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid #334155; font-size: .85rem; }
-  th { color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: .75rem; letter-spacing: .05em; }
-  td { color: #cbd5e1; }
-  .tag { display: inline-block; padding: .15rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
-  .tag.req { background: #3b1f1f; color: #f87171; }
-  .tag.opt { background: #1e3a2f; color: #4ade80; }
-  .footer { text-align: center; padding: 2rem; color: #64748b; font-size: .85rem; border-top: 1px solid #1e293b; margin-top: 3rem; }
-  @media (max-width: 640px) { .header h1 { font-size: 1.5rem; } .container { padding: 1rem; } }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Amigable Cobro — API | Documentación Interactiva</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  <style>
+    body { margin: 0; background: #0f172a; }
+    .topbar-wrapper .link { display: flex; align-items: center; }
+    .topbar-wrapper .link img { height: 32px; }
+    .swagger-ui .topbar { background: #1e293b; border-bottom: 1px solid #334155; }
+    .swagger-ui .info .title { color: #f1f5f9; }
+    .swagger-ui .info { margin: 30px 0; }
+    .swagger-ui .info p, .swagger-ui .info li, .swagger-ui .info table { color: #cbd5e1; }
+    .swagger-ui .scheme-container { background: #1e293b; box-shadow: none; border: 1px solid #334155; border-radius: 8px; padding: 15px; }
+    .swagger-ui .opblock-tag { color: #f1f5f9; border-bottom: 1px solid #334155; }
+    .swagger-ui .opblock-tag:hover { background: #1e293b; }
+    .swagger-ui .opblock .opblock-summary-description { color: #94a3b8; }
+    .swagger-ui .opblock-summary-method { border-radius: 4px; }
+    .swagger-ui .opblock-body { background: #0f172a; }
+    .swagger-ui .opblock-body pre { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; }
+    .swagger-ui .opblock-body .btn { border-radius: 6px; }
+    .swagger-ui table thead tr td, .swagger-ui table thead tr th { border-bottom: 1px solid #334155; color: #94a3b8; }
+    .swagger-ui .parameter__name, .swagger-ui .parameter__type, .swagger-ui .prop-name, .swagger-ui .prop-type { color: #cbd5e1; }
+    .swagger-ui .model-box { background: #1e293b; border: 1px solid #334155; border-radius: 6px; }
+    .swagger-ui .model-title { color: #f1f5f9; }
+    .swagger-ui .model { color: #e2e8f0; }
+    .swagger-ui .model .property { color: #94a3b8; }
+    .swagger-ui section.models { border: 1px solid #334155; border-radius: 8px; }
+    .swagger-ui section.models.is-open h4 { border-bottom: 1px solid #334155; }
+    .swagger-ui .response-col_status, .swagger-ui .response-col_description, .swagger-ui .response-col_links { color: #cbd5e1; }
+    .swagger-ui .markdown p, .swagger-ui .markdown li { color: #cbd5e1; }
+    .swagger-ui .btn.authorize { border-color: #38bdf8; color: #38bdf8; }
+    .swagger-ui .btn.authorize:hover { background-color: rgba(56, 189, 248, 0.1); }
+    .swagger-ui .auth-btn-wrapper .btn-done { border-color: #4ade80; color: #4ade80; }
+    .swagger-ui .auth-container input[type=text] { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; }
+    .swagger-ui .auth-container label { color: #cbd5e1; }
+    .swagger-ui .dialog-ux .modal-ux { background: #1e293b; border: 1px solid #334155; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .swagger-ui .dialog-ux .modal-ux-header h3 { color: #f1f5f9; }
+    .swagger-ui .dialog-ux .modal-ux-content h4 { color: #cbd5e1; }
+    .swagger-ui .dialog-ux .modal-ux-content p { color: #94a3b8; }
+    .swagger-ui select { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; }
+    .swagger-ui .tab li { color: #94a3b8; }
+    .swagger-ui .tab li.active { color: #38bdf8; }
+    .swagger-ui .loading-container { color: #94a3b8; }
+    .swagger-ui .loading-container .loading { background: #1e293b; border-color: #334155; }
+    .swagger-ui .errors-wrapper { background: #3b1f1f; border-color: #f87171; }
+    .swagger-ui .errors-wrapper hgroup { background: #3b1f1f; }
+    .swagger-ui .global-server-container { background: #1e293b; }
+    .swagger-ui .servers label { color: #94a3b8; }
+    .swagger-ui .servers select { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; }
+    .swagger-ui .response-control-media-type { color: #94a3b8; }
+    .swagger-ui .response-control-media-type__accept-message { color: #4ade80; }
+    .swagger-ui .opblock .opblock-summary-path { color: #60a5fa; }
+    .swagger-ui .opblock .opblock-summary-path a { color: #60a5fa; }
+    .swagger-ui .opblock .opblock-summary-description { color: #94a3b8; }
+    .swagger-ui .opblock-description-wrapper p { color: #cbd5e1; }
+    .swagger-ui .opblock .opblock-section-header { background: #1e293b; border-bottom: 1px solid #334155; }
+    .swagger-ui .opblock .opblock-section-header h4 { color: #f1f5f9; }
+    .swagger-ui .opblock .opblock-section-header label { color: #94a3b8; }
+    .swagger-ui .opblock-body .opblock-body pre { background: #0f172a; }
+    .swagger-ui .opblock-body .parameter__name.required:after { color: #f87171; }
+    .swagger-ui .opblock-body .parameter__extension, .swagger-ui .opblock-body .parameter__in { color: #64748b; }
+    .swagger-ui .response-col_description__inner div.markdown p { color: #cbd5e1; }
+    .swagger-ui .responses-inner h4, .swagger-ui .responses-inner h5, .swagger-ui .responses-inner .response-col_status { color: #cbd5e1; }
+    .swagger-ui .model-container { background: #1e293b; border-radius: 6px; }
+    .swagger-ui .model-container .models-control, .swagger-ui .model-container .model-box-control { border-radius: 6px; }
+    .swagger-ui .model-container .model-box-control:focus, .swagger-ui .model-container .models-control:focus { background: #1e293b; }
+  </style>
 </head>
 <body>
-
-<div class="header">
-  <h1>Amigable Cobro — API REST</h1>
-  <p>Documentación para integración de agentes y sistemas externos</p>
-  <div class="base-url">https://api-amigablecobro.amacruxlab.com/api/v1</div>
-</div>
-
-<div class="container">
-
-<!-- Autenticación -->
-<section>
-  <h2>Autenticación</h2>
-  <p>Todos los endpoints (excepto <span class="inline-code">/public/businesses</span>) requieren autenticación mediante dos credenciales:</p>
-
-  <div class="card">
-    <div class="card-header"><span style="color:#38bdf8;">X-Entity-ID</span></div>
-    <div class="card-body">
-      <p>ID de la entidad o agente autorizado. Se obtiene al registrar tu agente en el panel de administración.</p>
-      <pre>X-Entity-ID: 779d1ab2-2bc1-4f27-b6a8-9e99cc00cd64</pre>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span style="color:#38bdf8;">Authorization: Bearer</span></div>
-    <div class="card-body">
-      <p>Token de acceso. Se genera desde el panel SuperAdmin en <span class="inline-code">/superadmin/api-entities</span>. También puede enviarse como <span class="inline-code">X-API-Key</span>.</p>
-      <pre>Authorization: Bearer 81381ab9d12898b9137b40590b4dfb884f420fbee01a5f102961584396b0fb99</pre>
-    </div>
-  </div>
-
-  <div class="note">
-    <strong>Importante:</strong> Ambas credenciales deben enviarse en el <strong>header HTTP</strong> de cada petición. El token puede expirar si se configuró una fecha de expiración al generarlo.
-  </div>
-
-  <h3>Ejemplo con cURL</h3>
-  <pre>curl -sk "https://api-amigablecobro.amacruxlab.com/api/v1/collections?business_uuid=b206bc66-758b-4c8a-87e0-cf85395e57d7" \
-  -H "X-Entity-ID: 779d1ab2-2bc1-4f27-b6a8-9e99cc00cd64" \
-  -H "Authorization: Bearer 81381ab9d12898b9137b40590b4dfb884f420fbee01a5f102961584396b0fb99" \
-  -H "Accept: application/json"</pre>
-</section>
-
-<!-- Directorio Público -->
-<section>
-  <h2>Directorio Público</h2>
-  <p>No requiere autenticación. Devuelve el listado de negocios activos.</p>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /public/businesses</div>
-    <div class="card-body">
-      <p>Obtiene todos los negocios activos con su UUID, nombre y WhatsApp.</p>
-
-      <h3>Respuesta</h3>
-      <pre>{
-  "success": true,
-  "data": [
-    {
-      "uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
-      "name": "Club Árabe de Maturín",
-      "whatsapp_phone": "+584241234567"
-    }
-  ]
-}</pre>
-    </div>
-  </div>
-</section>
-
-<!-- Colecciones -->
-<section>
-  <h2>Colecciones (Cuentas por Cobrar)</h2>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /collections</div>
-    <div class="card-body">
-      <p>Lista todas las transacciones/cuentas por cobrar de un negocio.</p>
-      <h3>Parámetros (query string)</h3>
-      <table>
-        <tr><th>Parámetro</th><th>Tipo</th><th></th><th>Descripción</th></tr>
-        <tr><td><span class="inline-code">business_uuid</span></td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio (ej: b206bc66-...</td></tr>
-        <tr><td><span class="inline-code">page</span></td><td>integer</td><td><span class="tag opt">opt</span></td><td>Número de página (default: 1)</td></tr>
-        <tr><td><span class="inline-code">per_page</span></td><td>integer</td><td><span class="tag opt">opt</span></td><td>Resultados por página (default: 15)</td></tr>
-        <tr><td><span class="inline-code">status</span></td><td>string</td><td><span class="tag opt">opt</span></td><td>Filtrar por estado: PENDING, PAID, OVERDUE</td></tr>
-      </table>
-      <h3>Respuesta</h3>
-      <pre>{
-  "success": true,
-  "data": {
-    "data": [
-      {
-        "id": 1,
-        "client_name": "Leonardo Morales",
-        "client_phone": "+584244095405",
-        "client_document": "V-25452265",
-        "total_amount": 100.00,
-        "paid_amount": 10.00,
-        "status": "PENDING",
-        "due_date": "2026-07-22T00:00:00-04:00",
-        "created_at": "2026-07-22T00:00:00-04:00",
-        "payments": [
-          {
-            "id": 1,
-            "amount": 10.00,
-            "payment_method": "CASH",
-            "payment_date": "2026-06-24T12:00:00-04:00"
-          }
-        ]
-      }
-    ],
-    "meta": {
-      "total": 1,
-      "current_page": 1,
-      "last_page": 1
-    }
-  }
-}</pre>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span class="method post">POST</span> /collections</div>
-    <div class="card-body">
-      <p>Crea una nueva cuenta por cobrar.</p>
-      <h3>Body (JSON)</h3>
-      <table>
-        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
-        <tr><td><span class="inline-code">business_uuid</span></td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio (ej: b206bc66-...</td></tr>
-        <tr><td><span class="inline-code">client_name</span></td><td>string</td><td><span class="tag req">req</span></td><td>Nombre del cliente/deudor</td></tr>
-        <tr><td><span class="inline-code">client_phone</span></td><td>string</td><td><span class="tag opt">opt</span></td><td>Teléfono (ej: +584241234567)</td></tr>
-        <tr><td><span class="inline-code">client_document</span></td><td>string</td><td><span class="tag opt">opt</span></td><td>Cédula o RIF</td></tr>
-        <tr><td><span class="inline-code">total_amount</span></td><td>float</td><td><span class="tag req">req</span></td><td>Monto total de la deuda</td></tr>
-        <tr><td><span class="inline-code">due_date</span></td><td>string</td><td><span class="tag opt">opt</span></td><td>Fecha de vencimiento (ISO 8601)</td></tr>
-        <tr><td><span class="inline-code">page</span></td><td>integer</td><td><span class="tag opt">opt</span></td><td>Número de página (default: 1)</td></tr>
-      </table>
-      <h3>Ejemplo</h3>
-      <pre>curl -sk -X POST https://api-amigablecobro.amacruxlab.com/api/v1/collections \
-  -H "X-Entity-ID: 779d1ab2-..." \
-  -H "Authorization: Bearer 81381ab9..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
-    "client_name": "Juan Pérez",
-    "client_phone": "+584140000000",
-    "client_document": "V12345678",
-    "total_amount": 250.00,
-    "due_date": "2026-08-15T00:00:00Z"
-  }'</pre>
-      <h3>Respuesta (201 Created)</h3>
-      <pre>{
-  "success": true,
-  "data": {
-    "id": 10,
-    "client_name": "Juan Pérez",
-    "client_phone": "+584140000000",
-    "client_document": "V12345678",
-    "total_amount": 250.00,
-    "paid_amount": 0.00,
-    "status": "PENDING",
-    "due_date": "2026-08-15T00:00:00Z",
-    "created_at": "2026-06-24T12:00:00Z"
-  }
-}</pre>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /collections/{id}</div>
-    <div class="card-body">
-      <p>Obtiene una cuenta por cobrar específica con sus pagos asociados.</p>
-      <h3>Parámetros</h3>
-      <table>
-        <tr><th>Parámetro</th><th>Ubicación</th><th></th><th>Descripción</th></tr>
-        <tr><td><span class="inline-code">id</span></td><td>URL</td><td><span class="tag req">req</span></td><td>ID de la transacción</td></tr>
-        <tr><td><span class="inline-code">business_uuid</span></td><td>query</td><td><span class="tag req">req</span></td><td>ID del negocio</td></tr>
-      </table>
-      <pre>curl -sk "https://api-amigablecobro.amacruxlab.com/api/v1/collections/10?business_uuid=b206bc66-758b-4c8a-87e0-cf85395e57d7" \
-  -H "X-Entity-ID: 779d1ab2-..." \
-  -H "Authorization: Bearer 81381ab9..."</pre>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span class="method post">POST</span> /collections/{id}/payments</div>
-    <div class="card-body">
-      <p>Registra un pago parcial o total a una cuenta.</p>
-      <h3>Body (JSON)</h3>
-      <table>
-        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
-        <tr><td><span class="inline-code">business_uuid</span></td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio (ej: b206bc66-...</td></tr>
-        <tr><td><span class="inline-code">amount</span></td><td>float</td><td><span class="tag req">req</span></td><td>Monto del pago</td></tr>
-        <tr><td><span class="inline-code">payment_method</span></td><td>string</td><td><span class="tag req">req</span></td><td>Método: CASH, TRANSFER, POS, ZELLE, PAYPAL, OTHER</td></tr>
-        <tr><td><span class="inline-code">payment_date</span></td><td>string</td><td><span class="tag opt">opt</span></td><td>Fecha del pago (ISO 8601). Default: ahora</td></tr>
-      </table>
-      <h3>Ejemplo</h3>
-      <pre>curl -sk -X POST https://api-amigablecobro.amacruxlab.com/api/v1/collections/10/payments \
-  -H "X-Entity-ID: 779d1ab2-..." \
-  -H "Authorization: Bearer 81381ab9..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
-    "amount": 100.00,
-    "payment_method": "TRANSFER",
-    "payment_date": "2026-06-24T14:30:00Z"
-  }'</pre>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span class="method put">PUT</span> /collections/{id}/status</div>
-    <div class="card-body">
-      <p>Actualiza el estado de una cuenta (PENDING, PAID, OVERDUE, CANCELLED).</p>
-      <h3>Body (JSON)</h3>
-      <table>
-        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
-        <tr><td><span class="inline-code">business_uuid</span></td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio (ej: b206bc66-...</td></tr>
-        <tr><td><span class="inline-code">status</span></td><td>string</td><td><span class="tag req">req</span></td><td>Nuevo estado: PENDING, PAID, OVERDUE, CANCELLED</td></tr>
-      </table>
-      <pre>curl -sk -X PUT https://api-amigablecobro.amacruxlab.com/api/v1/collections/10/status \
-  -H "X-Entity-ID: 779d1ab2-..." \
-  -H "Authorization: Bearer 81381ab9..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
-    "status": "PAID"
-  }'</pre>
-    </div>
-  </div>
-</section>
-
-<!-- Analytics -->
-<section>
-  <h2>Estadísticas e Inteligencia</h2>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /analytics/kpis</div>
-    <div class="card-body">
-      <p>Obtiene indicadores clave de rendimiento para un negocio.</p>
-      <h3>Parámetros</h3>
-      <table>
-        <tr><th>Parámetro</th><th>Tipo</th><th></th><th>Descripción</th></tr>
-        <tr><td><span class="inline-code">business_uuid</span></td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio (ej: b206bc66-...</td></tr>
-        <tr><td><span class="inline-code">period</span></td><td>string</td><td><span class="tag opt">opt</span></td><td>Periodo: today, this_week, this_month, this_year, all_time</td></tr>
-      </table>
-      <h3>Respuesta</h3>
-      <pre>{
-  "success": true,
-  "data": {
-    "total_emitted": 1500.00,
-    "total_collected": 850.00,
-    "total_pending": 650.00,
-    "collection_rate": 56.7,
-    "active_accounts": 12,
-    "paid_accounts": 8
-  }
-}</pre>
-    </div>
-  </div>
-</section>
-
-<!-- Calendario -->
-<section>
-  <h2>Calendario y Eventos</h2>
-
-  <div class="card">
-    <div class="card-header"><span class="method get">GET</span> /calendar/events</div>
-    <div class="card-body">
-      <p>Obtiene eventos de cobro agrupados por día para un mes específico.</p>
-      <h3>Parámetros</h3>
-      <table>
-        <tr><th>Parámetro</th><th>Tipo</th><th></th><th>Descripción</th></tr>
-        <tr><td><span class="inline-code">business_uuid</span></td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio (ej: b206bc66-...</td></tr>
-        <tr><td><span class="inline-code">month</span></td><td>integer</td><td><span class="tag req">req</span></td><td>Mes (1-12)</td></tr>
-        <tr><td><span class="inline-code">year</span></td><td>integer</td><td><span class="tag req">req</span></td><td>Año (ej: 2026)</td></tr>
-      </table>
-      <h3>Respuesta</h3>
-      <pre>{
-  "success": true,
-  "data": [
-    {
-      "date": "2026-06-15",
-      "total_expected": 500.00,
-      "total_collected": 200.00,
-      "events": [
-        {
-          "transaction_id": 5,
-          "client_name": "María García",
-          "amount": 500.00,
-          "status": "PARTIAL"
-        }
-      ]
-    }
-  ]
-}</pre>
-    </div>
-  </div>
-</section>
-
-<!-- Errores -->
-<section>
-  <h2>Códigos de Error</h2>
-
-  <table>
-    <tr><th>HTTP</th><th>Código</th><th>Significado</th></tr>
-    <tr><td>401</td><td>Faltan credenciales</td><td>No se envió X-Entity-ID o el token Bearer</td></tr>
-    <tr><td>401</td><td>Credenciales inválidas</td><td>El token o entity ID no coinciden</td></tr>
-    <tr><td>401</td><td>Token expirado</td><td>El token tiene una fecha de expiración vencida</td></tr>
-    <tr><td>403</td><td>Entidad inactiva</td><td>La entidad API fue desactivada desde el panel</td></tr>
-    <tr><td>404</td><td>No encontrado</td><td>El recurso solicitado no existe</td></tr>
-    <tr><td>422</td><td>Error de validación</td><td>Datos inválidos en la petición (revisar campos)</td></tr>
-    <tr><td>500</td><td>Error interno</td><td>Error del servidor. Contactar al administrador.</td></tr>
-  </table>
-
-  <div class="note">
-    <strong>Todos los errores</strong> retornan un JSON con la estructura: <span class="inline-code">{ "success": false, "message": "descripción del error" }</span>
-  </div>
-</section>
-
-<section>
-  <h2>Forma de los Pagos (payment_method)</h2>
-  <table>
-    <tr><th>Valor</th><th>Descripción</th></tr>
-    <tr><td><span class="inline-code">CASH</span></td><td>Efectivo</td></tr>
-    <tr><td><span class="inline-code">TRANSFER</span></td><td>Transferencia bancaria</td></tr>
-    <tr><td><span class="inline-code">POS</span></td><td>Punto de venta / tarjeta</td></tr>
-    <tr><td><span class="inline-code">ZELLE</span></td><td>Zelle</td></tr>
-    <tr><td><span class="inline-code">PAYPAL</span></td><td>PayPal</td></tr>
-    <tr><td><span class="inline-code">OTHER</span></td><td>Otro</td></tr>
-  </table>
-</section>
-
-<div class="footer">
-  Amigable Cobro API &mdash; Documentación para desarrolladores &mdash; v1.0.0
-</div>
-
-</div>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+  <script>
+    SwaggerUIBundle({
+      url: "/docs/openapi.json",
+      dom_id: "#swagger-ui",
+      deepLinking: true,
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.SwaggerUIStandalonePreset
+      ],
+      plugins: [
+        SwaggerUIBundle.plugins.DownloadUrl
+      ],
+      layout: "StandaloneLayout",
+      defaultModelsExpandDepth: -1,
+      docExpansion: "list",
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      tryItOutEnabled: true,
+      supportedSubmitMethods: ["get", "post", "put", "delete"],
+    });
+  </script>
 </body>
 </html>

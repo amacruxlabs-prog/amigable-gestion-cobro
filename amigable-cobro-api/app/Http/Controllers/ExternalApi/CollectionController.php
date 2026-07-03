@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 
 class CollectionController extends Controller
@@ -92,6 +93,8 @@ class CollectionController extends Controller
             'due_date' => $validated['due_date'] ?? null,
         ]);
 
+        Cache::forget("business_{$business->id}_dashboard");
+
         return $this->successResponse(
             ['id' => $transaction->id],
             'Cuenta creada',
@@ -157,6 +160,8 @@ class CollectionController extends Controller
         });
 
         $transaction->refresh();
+        
+        Cache::forget("business_{$business->id}_dashboard");
 
         return $this->successResponse([
             'new_paid_amount' => (float) $transaction->paid_amount,
@@ -177,6 +182,8 @@ class CollectionController extends Controller
             ->firstOrFail();
 
         $transaction->update(['status' => $validated['status']]);
+        
+        Cache::forget("business_{$business->id}_dashboard");
 
         return $this->successResponse(null, 'Estado actualizado');
     }
@@ -199,6 +206,7 @@ class CollectionController extends Controller
         ]);
 
         $transaction->update($validated);
+        Cache::forget("business_{$business->id}_dashboard");
 
         return $this->successResponse(null, 'Cuenta actualizada');
     }
@@ -258,10 +266,7 @@ class CollectionController extends Controller
 
             DB::commit();
 
-            return $this->successResponse(null, 'Descuento aplicado exitosamente.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->errorResponse('Error al aplicar descuento: ' . $e->getMessage(), 'DISCOUNT_ERROR', null, 500);
+            Cache::forget("business_{$business->id}_dashboard");
         }
     }
 }

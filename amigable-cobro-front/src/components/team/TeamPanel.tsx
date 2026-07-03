@@ -71,11 +71,12 @@ export const TeamPanel: React.FC = () => {
   // Form state
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePhone, setInvitePhone] = useState('');
   const [invitePassword, setInvitePassword] = useState('');
   const [inviteRole, setInviteRole] = useState<'Admin Local' | 'Lectura'>('Admin Local');
   const [inviteError, setInviteError] = useState('');
-  const [inviteSent, setInviteSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -91,7 +92,7 @@ export const TeamPanel: React.FC = () => {
     e.preventDefault();
     setInviteError('');
 
-    if (!inviteName.trim() || !inviteEmail.trim() || !invitePassword.trim()) {
+    if (!inviteName.trim() || !inviteEmail.trim() || !invitePhone.trim() || !invitePassword.trim()) {
       setInviteError('Todos los campos son obligatorios.');
       return;
     }
@@ -106,14 +107,16 @@ export const TeamPanel: React.FC = () => {
       await createUser({
         name: inviteName,
         email: inviteEmail,
+        phone: `+58 ${invitePhone.trim()}`,
         password: invitePassword,
         role: inviteRole
       });
       setInviteName('');
       setInviteEmail('');
+      setInvitePhone('');
       setInvitePassword('');
-      setInviteSent(true);
-      setTimeout(() => setInviteSent(false), 3000);
+      setAddModalOpen(false);
+      toast('Usuario creado correctamente. Ya puede iniciar sesión.', 'success');
     } catch (err: any) {
       setInviteError(err?.response?.data?.message || 'Ocurrió un error al crear el usuario.');
     } finally {
@@ -173,7 +176,7 @@ export const TeamPanel: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="p-6 space-y-6 w-full">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -203,97 +206,14 @@ export const TeamPanel: React.FC = () => {
               {inactiveMembers.length} inactivo{inactiveMembers.length !== 1 ? 's' : ''}
             </div>
           )}
+          <button onClick={() => setAddModalOpen(true)} className="btn btn-primary py-1.5 px-3 ml-2">
+            <UserPlus className="w-4 h-4" />
+            <span>Crear Usuario</span>
+          </button>
         </div>
       </div>
 
-      <div className="card">
-        <div className="flex items-center gap-2 mb-4">
-          <UserPlus className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
-          <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-            Crear nuevo usuario
-          </h3>
-        </div>
 
-        <form onSubmit={handleCreateUser} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
-            <div className="sm:col-span-3 space-y-1">
-              <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Nombre
-              </label>
-              <input
-                type="text"
-                placeholder="Juan Pérez"
-                value={inviteName}
-                onChange={(e) => { setInviteName(e.target.value); setInviteError(''); }}
-              />
-            </div>
-            <div className="sm:col-span-3 space-y-1">
-              <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-2.5 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                <input
-                  type="email"
-                  placeholder="gestor@empresa.com"
-                  value={inviteEmail}
-                  onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); }}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <div className="sm:col-span-3 space-y-1">
-              <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Contraseña Inicial
-              </label>
-              <div className="relative">
-                <Key className="absolute left-3 top-2.5 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                <input
-                  type="password"
-                  placeholder="********"
-                  value={invitePassword}
-                  onChange={(e) => { setInvitePassword(e.target.value); setInviteError(''); }}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
-            <div className="sm:col-span-3 space-y-1">
-              <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Rol asignado
-              </label>
-              <div className="relative">
-                <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
-                <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as any)}>
-                  <option value="Admin Local">Admin Local (Operador)</option>
-                  <option value="Lectura">Invitado (Solo lectura)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="sm:col-span-12 flex justify-end">
-              <button type="submit" disabled={isSubmitting} className="btn btn-primary" style={{ height: '36px' }}>
-                <Send className="w-3.5 h-3.5" />
-                <span>Crear Usuario</span>
-              </button>
-            </div>
-          </div>
-
-          {inviteError && (
-            <div className="alert alert-danger animate-fade-in py-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{inviteError}</span>
-            </div>
-          )}
-
-          {inviteSent && (
-            <div className="alert alert-success animate-fade-in py-2">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>Usuario creado correctamente. Ya puede iniciar sesión.</span>
-            </div>
-          )}
-        </form>
-      </div>
 
       <div>
         <div className="flex border-b mb-5" style={{ borderColor: 'var(--border-default)' }}>
@@ -461,6 +381,117 @@ export const TeamPanel: React.FC = () => {
               <div className="flex gap-2 justify-end mt-6">
                 <button type="button" onClick={() => setPasswordModalOpen(false)} className="btn btn-secondary">Cancelar</button>
                 <button type="submit" className="btn btn-primary">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {addModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+          <div className="card w-full max-w-xl" style={{ background: 'var(--surface-card)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5" style={{ color: 'var(--color-brand)' }} />
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Crear nuevo usuario
+                </h3>
+              </div>
+              <button type="button" onClick={() => setAddModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                <div className="space-y-1">
+                  <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Juan Pérez"
+                    value={inviteName}
+                    onChange={(e) => { setInviteName(e.target.value); setInviteError(''); }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Correo electrónico
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                    <input
+                      type="email"
+                      placeholder="gestor@empresa.com"
+                      value={inviteEmail}
+                      onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); }}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Teléfono
+                  </label>
+                  <div className="relative flex">
+                    <span className="inline-flex items-center px-3 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm rounded-l-md" style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+                      +58
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="4121234567"
+                      value={invitePhone}
+                      onChange={(e) => { setInvitePhone(e.target.value.replace(/[^0-9]/g, '')); setInviteError(''); }}
+                      className="flex-1 rounded-l-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Contraseña Inicial
+                  </label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-2.5 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                    <input
+                      type="password"
+                      placeholder="********"
+                      value={invitePassword}
+                      onChange={(e) => { setInvitePassword(e.target.value); setInviteError(''); }}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Rol asignado
+                  </label>
+                  <div className="relative">
+                    <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as any)}>
+                      <option value="Admin Local">Admin Local (Operador)</option>
+                      <option value="Lectura">Invitado (Solo lectura)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {inviteError && (
+                <div className="alert alert-danger animate-fade-in py-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{inviteError}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 mt-6 pt-4 border-t" style={{ borderColor: 'var(--border-default)' }}>
+                <button type="button" onClick={() => setAddModalOpen(false)} className="btn btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={isSubmitting} className="btn btn-primary">
+                  {isSubmitting ? 'Creando...' : 'Crear Usuario'}
+                </button>
               </div>
             </form>
           </div>

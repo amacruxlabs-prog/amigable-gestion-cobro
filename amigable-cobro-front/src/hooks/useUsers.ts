@@ -34,7 +34,7 @@ export const useUsers = () => {
     }
   }, []);
 
-  const createUser = async (payload: { name: string, email: string, password: string, role: string }) => {
+  const createUser = async (payload: { name: string, email: string, phone: string, password: string, role: string }) => {
     const response = await api.post('/tenant/users', payload);
     await fetchUsers();
     return response.data;

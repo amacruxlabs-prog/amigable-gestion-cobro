@@ -41,7 +41,7 @@ services:
     build:
       context: ./amigable-cobro-front
       args:
-        - VITE_API_URL=https://api-amigablecobro.amacruxlab.com/api
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8008/api}
       dockerfile: Dockerfile
     image: amigable-cobro-front
     container_name: amigable-cobro-front

@@ -14,7 +14,15 @@ class Transaction extends Model
         'total_amount',
         'paid_amount',
         'status',
+        'due_date',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'datetime',
+        ];
+    }
 
     public function business()
     {

@@ -89,6 +89,7 @@ class CollectionController extends Controller
             'total_amount' => $validated['total_amount'],
             'paid_amount' => 0,
             'status' => 'PENDING',
+            'due_date' => $validated['due_date'] ?? null,
         ]);
 
         return $this->successResponse(
@@ -119,7 +120,6 @@ class CollectionController extends Controller
             'payments' => $transaction->payments()->orderBy('created_at', 'desc')->get()->map(fn($p) => [
                 'id' => $p->id,
                 'amount' => (float) $p->amount,
-                'payment_method' => $p->payment_method,
                 'payment_date' => $p->payment_date?->toIso8601String(),
             ]),
         ]);
@@ -131,7 +131,6 @@ class CollectionController extends Controller
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'payment_method' => ['required', 'string', Rule::in(['CASH', 'TRANSFER', 'POS', 'ZELLE', 'PAYPAL', 'OTHER'])],
             'payment_date' => 'nullable|date',
         ]);
 
@@ -147,7 +146,6 @@ class CollectionController extends Controller
             Payment::create([
                 'transaction_id' => $transaction->id,
                 'amount' => $validated['amount'],
-                'payment_method' => $validated['payment_method'],
                 'payment_date' => $validated['payment_date'] ?? now(),
             ]);
 
@@ -181,5 +179,89 @@ class CollectionController extends Controller
         $transaction->update(['status' => $validated['status']]);
 
         return $this->successResponse(null, 'Estado actualizado');
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $business = $this->getBusinessFromUuid($request);
+
+        $transaction = Transaction::where('id', $id)
+            ->where('business_id', $business->id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'client_name' => 'sometimes|string|max:255',
+            'client_phone' => 'sometimes|nullable|string|max:20',
+            'client_document' => 'sometimes|nullable|string|max:20',
+            'total_amount' => 'sometimes|numeric|min:0',
+            'due_date' => 'sometimes|nullable|date',
+            'status' => 'sometimes|string|in:PENDING,PAID,OVERDUE,CANCELLED',
+        ]);
+
+        $transaction->update($validated);
+
+        return $this->successResponse(null, 'Cuenta actualizada');
+    }
+
+    public function applyDiscount(Request $request)
+    {
+        $business = $this->getBusinessFromUuid($request);
+
+        $validated = $request->validate([
+            'transaction_ids' => 'required|array',
+            'transaction_ids.*' => 'integer',
+            'percentage' => 'required|numeric|min:0.01|max:100',
+        ]);
+
+        $txIds = $validated['transaction_ids'];
+        $pct = (float) $validated['percentage'];
+
+        try {
+            DB::beginTransaction();
+
+            $transactions = Transaction::whereIn('id', $txIds)
+                ->where('business_id', $business->id)
+                ->get();
+
+            if ($transactions->isEmpty()) {
+                return $this->errorResponse('No se encontraron cuentas válidas.', 'NO_TRANSACTIONS', null, 404);
+            }
+
+            foreach ($transactions as $tx) {
+                if ($tx->status === 'PAID') {
+                    continue;
+                }
+
+                $outstanding = max(0, $tx->total_amount - $tx->paid_amount);
+                $discountAmount = $outstanding * ($pct / 100);
+
+                if ($discountAmount <= 0) {
+                    continue;
+                }
+
+                $newTotalAmount = $tx->total_amount - $discountAmount;
+                $newStatus = $tx->paid_amount >= $newTotalAmount ? 'PAID' : 'PENDING';
+
+                $tx->update([
+                    'total_amount' => $newTotalAmount,
+                    'status' => $newStatus,
+                ]);
+
+                DB::table('discounts')->insert([
+                    'transaction_id' => $tx->id,
+                    'percentage' => $pct,
+                    'amount' => $discountAmount,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            return $this->successResponse(null, 'Descuento aplicado exitosamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Error al aplicar descuento: ' . $e->getMessage(), 'DISCOUNT_ERROR', null, 500);
+        }
     }
 }

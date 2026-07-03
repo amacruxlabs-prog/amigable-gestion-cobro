@@ -139,14 +139,14 @@
         <label>X-Entity-ID</label>
         <div class="input-wrap">
           <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <input type="text" id="input-entity" placeholder="UUID de la entidad" value="779d1ab2-2bc1-4f27-b6a8-9e99cc00cd64" spellcheck="false">
+          <input type="text" id="input-entity" placeholder="UUID de la entidad" value="" spellcheck="false">
         </div>
       </div>
       <div class="creds-field">
         <label>Bearer Token</label>
         <div class="input-wrap">
           <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.743 5.743L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.586a1 1 0 0 1 .293-.707l5.964-5.964A6 6 0 1 1 21 9Z"/></svg>
-          <input type="text" id="input-token" placeholder="Token de acceso" value="81381ab9d12898b9137b40590b4dfb884f420fbee01a5f102961584396b0fb99" spellcheck="false">
+          <input type="text" id="input-token" placeholder="Token de acceso" value="" spellcheck="false">
         </div>
       </div>
       <div class="creds-status" id="creds-status">
@@ -209,7 +209,7 @@
     </div>
   </div>
 
-  <pre class="code-block">curl -sk "https://api-amigablecobro.amacruxlab.com/api/v1/collections?business_uuid=b206bc66-..." \
+  <pre class="code-block">curl -sk "https://api-amigablecobro.amacruxlab.com/api/v1/cuentas-y-cobros?business_uuid=b206bc66-..." \
   -H "X-Entity-ID: 779d1ab2-..." \
   -H "Authorization: Bearer 81381ab9..." \
   -H "Accept: application/json"</pre>
@@ -259,13 +259,13 @@
 
 <!-- ==================== COLLECTIONS ==================== -->
 <section>
-  <h2>Colecciones <span class="count">5</span></h2>
+  <h2>Cuentas y Cobros <span class="count">7</span></h2>
 
-  <!-- GET /collections -->
+  <!-- GET /cuentas-y-cobros -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method get">GET</span>
-      <span class="path">/collections</span>
+      <span class="path">/cuentas-y-cobros</span>
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
@@ -311,7 +311,7 @@
   }
 }</pre>
 
-      <div class="try-section" data-method="GET" data-ep="/collections" data-auth="true">
+      <div class="try-section" data-method="GET" data-ep="/cuentas-y-cobros" data-auth="true">
         <div class="params">
           <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
           <input type="text" class="p" data-name="status" placeholder="status: PENDING | PAID">
@@ -325,11 +325,11 @@
     </div>
   </div>
 
-  <!-- POST /collections -->
+  <!-- POST /cuentas-y-cobros -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method post">POST</span>
-      <span class="path">/collections</span>
+      <span class="path">/cuentas-y-cobros</span>
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
@@ -362,7 +362,7 @@
   }
 }</pre>
 
-      <div class="try-section" data-method="POST" data-ep="/collections" data-auth="true">
+      <div class="try-section" data-method="POST" data-ep="/cuentas-y-cobros" data-auth="true">
         <div class="params">
           <textarea class="p" data-name="body" rows="7">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
@@ -382,11 +382,11 @@
     </div>
   </div>
 
-  <!-- GET /collections/{id} -->
+  <!-- GET /cuentas-y-cobros/{id} -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method get">GET</span>
-      <span class="path">/collections/{id}</span>
+      <span class="path">/cuentas-y-cobros/{id}</span>
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
@@ -406,7 +406,7 @@
       </table>
 
       <p style="color:var(--text2);font-size:.82rem;margin-top:.75rem;">
-        La respuesta incluye los mismos campos que <span class="inline-code">GET /collections</span> más un array <span class="inline-code">payments</span> con cada pago registrado.
+        La respuesta incluye los mismos campos que <span class="inline-code">GET /cuentas-y-cobros</span> más un array <span class="inline-code">payments</span> con cada pago registrado.
       </p>
       <pre class="code-block">{
   "success": true,
@@ -424,20 +424,18 @@
       {
         "id": 1,
         "amount": 100.00,
-        "payment_method": "TRANSFER",
         "payment_date": "2026-06-24T14:30:00Z"
       },
       {
         "id": 2,
         "amount": 50.00,
-        "payment_method": "CASH",
         "payment_date": "2026-07-01T10:00:00Z"
       }
     ]
   }
 }</pre>
 
-      <div class="try-section" data-method="GET" data-ep="/collections/" data-auth="true" data-suffix="">
+      <div class="try-section" data-method="GET" data-ep="/cuentas-y-cobros/" data-auth="true" data-suffix="">
         <div class="params">
           <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
           <input type="text" class="p" data-name="business_uuid" placeholder="business_uuid *" value="b206bc66-758b-4c8a-87e0-cf85395e57d7">
@@ -451,11 +449,11 @@
     </div>
   </div>
 
-  <!-- POST /collections/{id}/payments -->
+  <!-- POST /cuentas-y-cobros/{id}/payments -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method post">POST</span>
-      <span class="path">/collections/{id}/payments</span>
+      <span class="path">/cuentas-y-cobros/{id}/payments</span>
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
@@ -478,7 +476,6 @@
         <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
         <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
         <tr><td>amount</td><td>float</td><td><span class="tag req">req</span></td><td>Monto del pago (debe ser mayor a 0)</td></tr>
-        <tr><td>payment_method</td><td>string</td><td><span class="tag req">req</span></td><td>Método de pago: <span class="inline-code">CASH</span>, <span class="inline-code">TRANSFER</span>, <span class="inline-code">POS</span>, <span class="inline-code">ZELLE</span>, <span class="inline-code">PAYPAL</span>, <span class="inline-code">OTHER</span></td></tr>
         <tr><td>payment_date</td><td>string</td><td><span class="tag opt">opt</span></td><td>Fecha del pago en ISO 8601. Si no se envía, se usa la fecha/hora actual.</td></tr>
       </table>
 
@@ -495,13 +492,12 @@
 <span style="color:var(--red);">// 400 - "La cuenta ya está pagada" (status = PAID)</span>
 <span style="color:var(--red);">// 404 - "Transacción no encontrada"</span></pre>
 
-      <div class="try-section" data-method="POST" data-ep="/collections/" data-auth="true" data-suffix="/payments">
+      <div class="try-section" data-method="POST" data-ep="/cuentas-y-cobros/" data-auth="true" data-suffix="/payments">
         <div class="params" style="flex-direction:column;">
           <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
           <textarea class="p" data-name="body" rows="6" style="margin-top:.5rem;">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "amount": 100.00,
-  "payment_method": "TRANSFER",
   "payment_date": "2026-06-24T14:30:00Z"
 }</textarea>
         </div>
@@ -514,11 +510,11 @@
     </div>
   </div>
 
-  <!-- PUT /collections/{id}/status -->
+  <!-- PUT /cuentas-y-cobros/{id}/status -->
   <div class="card">
     <div class="card-header" onclick="toggleCard(this)">
       <span class="method put">PUT</span>
-      <span class="path">/collections/{id}/status</span>
+      <span class="path">/cuentas-y-cobros/{id}/status</span>
       <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
     </div>
     <div class="card-body">
@@ -557,12 +553,112 @@
   "message": "Estado actualizado"
 }</pre>
 
-      <div class="try-section" data-method="PUT" data-ep="/collections/" data-auth="true" data-suffix="/status">
+      <div class="try-section" data-method="PUT" data-ep="/cuentas-y-cobros/" data-auth="true" data-suffix="/status">
         <div class="params" style="flex-direction:column;">
           <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
           <textarea class="p" data-name="body" rows="5" style="margin-top:.5rem;">{
   "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
   "status": "PAID"
+}</textarea>
+        </div>
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
+        </div>
+        <div class="resp"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUT /cuentas-y-cobros/{id} -->
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method put">PUT</span>
+      <span class="path">/cuentas-y-cobros/{id}</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="card-body">
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Actualiza los datos de una cuenta por cobrar existente. Solo se actualizan los campos enviados; los no enviados permanecen igual.</p>
+      </div>
+
+      <table class="param-table">
+        <tr><th>Parámetro</th><th>Ubicación</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>id</td><td>URL (path)</td><td>int</td><td><span class="tag req">req</span></td><td>ID de la transacción a actualizar</td></tr>
+      </table>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Cuerpo de la petición (JSON)</h3>
+      <table class="param-table">
+        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+        <tr><td>client_name</td><td>string</td><td><span class="tag opt">opt</span></td><td>Nombre del cliente</td></tr>
+        <tr><td>client_phone</td><td>string</td><td><span class="tag opt">opt</span></td><td>Teléfono del cliente</td></tr>
+        <tr><td>client_document</td><td>string</td><td><span class="tag opt">opt</span></td><td>Cédula o RIF del cliente</td></tr>
+        <tr><td>total_amount</td><td>float</td><td><span class="tag opt">opt</span></td><td>Nuevo monto total de la deuda</td></tr>
+        <tr><td>due_date</td><td>string</td><td><span class="tag opt">opt</span></td><td>Nueva fecha de vencimiento (ISO 8601)</td></tr>
+        <tr><td>status</td><td>string</td><td><span class="tag opt">opt</span></td><td>Nuevo estado: <span class="inline-code">PENDING</span>, <span class="inline-code">PAID</span>, <span class="inline-code">OVERDUE</span>, <span class="inline-code">CANCELLED</span></td></tr>
+      </table>
+
+      <pre class="code-block">{
+  "success": true,
+  "message": "Cuenta actualizada"
+}</pre>
+
+      <div class="try-section" data-method="PUT" data-ep="/cuentas-y-cobros/" data-auth="true" data-suffix="">
+        <div class="params" style="flex-direction:column;">
+          <input type="text" class="p" data-name="path" placeholder="{id} *" value="1">
+          <textarea class="p" data-name="body" rows="7" style="margin-top:.5rem;">{
+  "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
+  "client_name": "Juan Pérez Actualizado",
+  "client_phone": "+584141111111"
+}</textarea>
+        </div>
+        <div class="try-actions">
+          <button class="btn btn-primary" onclick="tryIt(this)"><span class="spinner"></span><span class="btn-text">Probar</span></button>
+          <button class="btn btn-secondary" onclick="copyCurl(this)">Copiar cURL</button>
+        </div>
+        <div class="resp"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST /cuentas-y-cobros/apply-discount -->
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span class="method post">POST</span>
+      <span class="path">/cuentas-y-cobros/apply-discount</span>
+      <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="card-body">
+      <div class="desc-box">
+        <div class="label">Propósito</div>
+        <p>Aplica un <strong>descuento porcentual</strong> a una o más cuentas por cobrar. El descuento se calcula sobre el <strong>saldo pendiente</strong> (total - pagado). Cada descuento queda registrado en el historial de la cuenta.</p>
+      </div>
+      <div class="desc-box">
+        <div class="label">¿Cuándo usarlo?</div>
+        <p>Para <strong>condonar parcialmente</strong> una deuda: ej. aplicar 20% de descuento por pago anticipado. Si después del descuento el saldo pagado iguala o supera el nuevo total, la cuenta pasa automáticamente a <span class="inline-code">PAID</span>.</p>
+      </div>
+
+      <h3 style="font-size:.85rem;font-weight:600;color:var(--text);margin:1rem 0 .5rem;">Cuerpo de la petición (JSON)</h3>
+      <table class="param-table">
+        <tr><th>Campo</th><th>Tipo</th><th></th><th>Descripción</th></tr>
+        <tr><td>business_uuid</td><td>string</td><td><span class="tag req">req</span></td><td>UUID del negocio</td></tr>
+        <tr><td>transaction_ids</td><td>array</td><td><span class="tag req">req</span></td><td>Array de IDs de transacciones a descontar (ej: <span class="inline-code">[1, 2, 3]</span>)</td></tr>
+        <tr><td>percentage</td><td>float</td><td><span class="tag req">req</span></td><td>Porcentaje de descuento (0.01 - 100). Se aplica sobre el saldo pendiente.</td></tr>
+      </table>
+
+      <pre class="code-block">{
+  "success": true,
+  "message": "Descuento aplicado exitosamente."
+}</pre>
+
+      <div class="try-section" data-method="POST" data-ep="/cuentas-y-cobros/apply-discount" data-auth="true">
+        <div class="params" style="flex-direction:column;">
+          <textarea class="p" data-name="body" rows="6">{
+  "business_uuid": "b206bc66-758b-4c8a-87e0-cf85395e57d7",
+  "transaction_ids": [1],
+  "percentage": 10
 }</textarea>
         </div>
         <div class="try-actions">
@@ -703,28 +799,13 @@
   <table class="param-table">
     <tr><th>Código</th><th>Significado</th><th>Posible causa</th></tr>
     <tr><td>200</td><td>Operación exitosa</td><td>La petición se procesó correctamente</td></tr>
-    <tr><td>201</td><td>Creado exitosamente</td><td>El recurso fue creado (POST /collections)</td></tr>
+    <tr><td>201</td><td>Creado exitosamente</td><td>El recurso fue creado (POST /cuentas-y-cobros)</td></tr>
     <tr><td>400</td><td>Solicitud incorrecta</td><td>Ej: intentar pagar una cuenta ya pagada</td></tr>
     <tr><td>401</td><td>No autorizado</td><td>Falta X-Entity-ID o Bearer, o son inválidos/expirados</td></tr>
     <tr><td>403</td><td>Prohibido</td><td>La entidad API fue desactivada desde el panel</td></tr>
     <tr><td>404</td><td>No encontrado</td><td>El recurso solicitado no existe (ID incorrecto)</td></tr>
     <tr><td>422</td><td>Error de validación</td><td>Falta un campo requerido o el formato es inválido</td></tr>
     <tr><td>500</td><td>Error interno</td><td>Error del servidor. Contactar al administrador.</td></tr>
-  </table>
-</section>
-
-<!-- ==================== PAYMENT METHODS ==================== -->
-<section>
-  <h2>Métodos de Pago</h2>
-  <p style="color:var(--text2);font-size:.85rem;margin-bottom:.75rem;">Usa estos valores en el campo <span class="inline-code">payment_method</span> del endpoint <span class="inline-code">POST /collections/{id}/payments</span>.</p>
-  <table class="param-table">
-    <tr><th>Valor</th><th>Descripción</th><th>Uso típico</th></tr>
-    <tr><td><span class="inline-code">CASH</span></td><td>Efectivo</td><td>Pago en persona con dinero físico</td></tr>
-    <tr><td><span class="inline-code">TRANSFER</span></td><td>Transferencia bancaria</td><td>Depósito o transferencia entre cuentas</td></tr>
-    <tr><td><span class="inline-code">POS</span></td><td>Punto de venta</td><td>Pago con tarjeta de débito/crédito</td></tr>
-    <tr><td><span class="inline-code">ZELLE</span></td><td>Zelle</td><td>Pago internacional vía Zelle</td></tr>
-    <tr><td><span class="inline-code">PAYPAL</span></td><td>PayPal</td><td>Pago internacional vía PayPal</td></tr>
-    <tr><td><span class="inline-code">OTHER</span></td><td>Otro</td><td>Cualquier otro método no listado</td></tr>
   </table>
 </section>
 

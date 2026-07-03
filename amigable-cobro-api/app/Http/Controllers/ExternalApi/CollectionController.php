@@ -267,6 +267,9 @@ class CollectionController extends Controller
             DB::commit();
 
             Cache::forget("business_{$business->id}_dashboard");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse("Error al aplicar descuento: " . $e->getMessage(), "DISCOUNT_ERROR", null, 500);
         }
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBusinessRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 class BusinessController extends Controller
@@ -28,6 +29,7 @@ class BusinessController extends Controller
             DB::beginTransaction();
 
             $businessId = DB::table('businesses')->insertGetId([
+                'uuid' => (string) Str::uuid(),
                 'name' => $request->name,
                 'owner_name' => $request->owner_name,
                 'whatsapp_phone' => $request->whatsapp_phone,

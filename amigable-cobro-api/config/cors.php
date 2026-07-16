@@ -3,10 +3,12 @@
 return [
     "paths" => ["api/*", "sanctum/csrf-cookie"],
     "allowed_methods" => ["*"],
-    "allowed_origins" => ["https://amigablecobro.amacruxlab.com"],
+    "allowed_origins" => env('APP_ENV') === 'local'
+        ? ['*']
+        : ['https://amigablecobro.amacruxlab.com'],
     "allowed_origins_patterns" => [],
     "allowed_headers" => ["*"],
     "exposed_headers" => [],
     "max_age" => 0,
-    "supports_credentials" => true,
+    "supports_credentials" => env('APP_ENV') === 'local' ? false : true,
 ];

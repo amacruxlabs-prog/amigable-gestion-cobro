@@ -51,6 +51,7 @@ export default defineConfig(() => {
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
       proxy: {
+        // Routes handled by Express server (same container)
         '/api/gemini': {
           target: 'http://localhost:3003',
           changeOrigin: true,
@@ -61,6 +62,11 @@ export default defineConfig(() => {
         },
         '/img': {
           target: 'http://localhost:3003',
+          changeOrigin: true,
+        },
+        // Routes handled by Laravel API (Docker network)
+        '/api': {
+          target: 'http://app:8000',
           changeOrigin: true,
         },
       },

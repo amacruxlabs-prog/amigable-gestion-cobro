@@ -45,7 +45,7 @@ export function useTransactions() {
           params: {
             page,
             search: filters.searchTerm,
-            status: filters.status !== 'todos' ? (filters.status === 'Pagado' ? 'PAID' : 'PENDING') : undefined,
+            status: filters.status !== 'todos' ? (filters.status === 'Pagado' ? 'PAID' : filters.status === 'Cancelado' ? 'CANCELLED' : filters.status === 'Vencido' ? 'OVERDUE' : 'PENDING') : undefined,
             start_date: filters.startDate || undefined,
             end_date: filters.endDate || undefined,
           }
@@ -71,7 +71,7 @@ export function useTransactions() {
         phone: t.client_phone || '',
         amount: Number(t.total_amount),
         paidAmount: Number(t.paid_amount),
-        status: t.status === 'PAID' ? 'Pagado' : 'Por cobrar',
+        status: t.status === 'PAID' ? 'Pagado' : t.status === 'CANCELLED' ? 'Cancelado' : t.status === 'OVERDUE' ? 'Vencido' : 'Por cobrar',
         date: t.created_at.substring(0, 10),
         payments: t.payments || [],
         discounts: t.discounts || [],
@@ -83,7 +83,7 @@ export function useTransactions() {
         clientName: t.client_name,
         amount: Number(t.total_amount),
         paidAmount: Number(t.paid_amount),
-        status: t.status === 'PAID' ? 'Pagado' : 'Por cobrar',
+        status: t.status === 'PAID' ? 'Pagado' : t.status === 'CANCELLED' ? 'Cancelado' : t.status === 'OVERDUE' ? 'Vencido' : 'Por cobrar',
         date: t.created_at.substring(0, 10),
       }));
 
@@ -129,6 +129,7 @@ export function useTransactions() {
     const t = transactions.find(tx => tx.id === id);
     if (!t) return;
     
+    if (t.status === 'Cancelado') return;
     const nextStatus = t.status === 'Pagado' ? 'PENDING' : 'PAID';
     try {
       await api.put(`/tenant/transactions/${id}`, { 

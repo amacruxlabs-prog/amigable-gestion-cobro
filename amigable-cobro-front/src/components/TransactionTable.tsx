@@ -1,7 +1,7 @@
 import React from 'react';
 import { Transaction, FilterState } from '../types';
 import { formatCurrency, formatDate, getVenezuelaTodayStr } from '../utils/format';
-import { Search, ChevronLeft, ChevronRight, Filter, Calendar, DollarSign, PlusCircle, Trash2, CheckCircle2, AlertCircle, Phone, Plus, Check, X, History, MapPin, User, UserPlus, Users } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Filter, Calendar, DollarSign, PlusCircle, Trash2, CheckCircle2, AlertCircle, XCircle, Phone, Plus, Check, X, History, MapPin, User, UserPlus, Users } from 'lucide-react';
 import { useTransactionTable } from '../hooks/useTransactionTable';
 import { AddTransactionModal } from './AddTransactionModal';
 
@@ -383,7 +383,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
           {/* Status selection buttons */}
           <div className="lg:col-span-2 flex border border-slate-200 rounded-lg overflow-hidden text-xs bg-white p-0.5 dark:bg-slate-800 dark:border-slate-700">
-            {(['todos', 'Pagado', 'Cobrar'] as const).map((st) => (
+            {(['todos', 'Pagado', 'Cobrar', 'Cancelado', 'Vencido'] as const).map((st) => (
               <button
                 key={st}
                 onClick={() => handleFilterUpdate({ status: st })}
@@ -393,7 +393,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200'
                 }`}
               >
-                {st === 'todos' ? 'Todos' : st === 'Pagado' ? 'Pagados' : 'Por Cobrar'}
+                {st === 'todos' ? 'Todos' : st === 'Pagado' ? 'Pagados' : st === 'Cancelado' ? 'Cancelados' : st === 'Vencido' ? 'Vencidos' : 'Por Cobrar'}
               </button>
             ))}
           </div>
@@ -525,7 +525,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                               </button>
                             )}
 
-                            {t.status !== 'Pagado' && (
+                            {t.status !== 'Pagado' && t.status !== 'Cancelado' && t.status !== 'Vencido' && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -629,9 +629,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       <button
                         onClick={() => onToggleStatus(t.id)}
                         className={
-                          `badge cursor-pointer transition-all duration-150 ` + (
+                          `badge ` + (
                           t.status === 'Pagado'
                             ? 'badge-success hover:brightness-95'
+                            : t.status === 'Cancelado'
+                            ? 'badge-slate cursor-default'
+                            : t.status === 'Vencido'
+                            ? 'badge-danger cursor-default'
                             : 'badge-warning hover:brightness-95'
                           )
                         }
@@ -641,6 +645,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                           <>
                             <CheckCircle2 className="w-3 h-3" />
                             Pagado
+                          </>
+                        ) : t.status === 'Cancelado' ? (
+                          <>
+                            <XCircle className="w-3 h-3" />
+                            Cancelada
+                          </>
+                        ) : t.status === 'Vencido' ? (
+                          <>
+                            <AlertCircle className="w-3 h-3" />
+                            Vencida
                           </>
                         ) : (
                           <>
@@ -902,9 +916,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                 <td className="px-4 py-2.5 font-mono text-emerald-600 dark:text-emerald-400">+{formatMoney(tPaid)}</td>
                                 <td className="px-4 py-2.5">
                                   <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                                    t.status === 'Pagado' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-450' : 'bg-amber-100 text-amber-800 dark:bg-amber-955/20 dark:text-amber-450'
+                                    t.status === 'Pagado' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-450' : t.status === 'Cancelado' ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400' : t.status === 'Vencido' ? 'bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-450' : 'bg-amber-100 text-amber-800 dark:bg-amber-955/20 dark:text-amber-450'
                                   }`}>
-                                    {t.status === 'Pagado' ? 'Pagado' : 'Pendiente'}
+                                    {t.status === 'Pagado' ? 'Pagado' : t.status === 'Cancelado' ? 'Cancelado' : t.status === 'Vencido' ? 'Vencido' : 'Pendiente'}
                                   </span>
                                 </td>
                               </tr>

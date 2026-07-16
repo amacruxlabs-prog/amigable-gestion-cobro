@@ -36,8 +36,10 @@ class TransactionController extends Controller
             });
         }
         
-        if ($request->has('status') && in_array($request->status, ['PENDING', 'PAID'])) {
+        if ($request->has('status') && in_array($request->status, ['PENDING', 'PAID', 'CANCELLED', 'OVERDUE'])) {
             $query->where('status', $request->status);
+        } else {
+            $query->whereNotIn('status', ['CANCELLED']);
         }
 
         if ($request->has('start_date') && !empty($request->start_date)) {
@@ -165,6 +167,10 @@ class TransactionController extends Controller
         
         if (!$transaction) {
             return $this->errorResponse('Transacción no encontrada.', 'NOT_FOUND', null, 404);
+        }
+
+        if ($transaction->status === 'CANCELLED') {
+            return $this->errorResponse('La cuenta está cancelada. No se pueden registrar abonos.', 'CANCELLED', null, 400);
         }
 
         $newPaidAmount = $transaction->paid_amount + $request->amount;

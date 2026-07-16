@@ -17,7 +17,7 @@ class CollectionController extends Controller
         $business = $this->getBusinessFromUuid($request);
 
         $request->validate([
-            'status' => 'nullable|string|in:PENDING,PAID',
+            'status' => 'nullable|string|in:PENDING,PAID,CANCELLED,OVERDUE',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'page' => 'nullable|integer|min:1',
@@ -25,8 +25,10 @@ class CollectionController extends Controller
 
         $query = Transaction::where('business_id', $business->id);
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && in_array($request->status, ['PENDING', 'PAID', 'CANCELLED', 'OVERDUE'])) {
             $query->where('status', $request->status);
+        } else {
+            $query->whereNotIn('status', ['CANCELLED']);
         }
 
         if ($request->filled('start_date')) {
@@ -143,6 +145,10 @@ class CollectionController extends Controller
 
         if ($transaction->status === 'PAID') {
             return $this->errorResponse('La cuenta ya está pagada', 'ALREADY_PAID', null, 400);
+        }
+
+        if ($transaction->status === 'CANCELLED') {
+            return $this->errorResponse('La cuenta está cancelada. No se pueden registrar abonos.', 'CANCELLED', null, 400);
         }
 
         DB::transaction(function () use ($transaction, $validated) {

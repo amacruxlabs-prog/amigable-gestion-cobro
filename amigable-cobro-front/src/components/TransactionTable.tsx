@@ -381,21 +381,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             />
           </div>
 
-          {/* Status selection buttons */}
-          <div className="lg:col-span-2 flex border border-slate-200 rounded-lg overflow-hidden text-xs bg-white p-0.5 dark:bg-slate-800 dark:border-slate-700">
-            {(['todos', 'Pagado', 'Cobrar', 'Cancelado', 'Vencido'] as const).map((st) => (
-              <button
-                key={st}
-                onClick={() => handleFilterUpdate({ status: st })}
-                className={`flex-1 py-1 px-1.5 rounded-md text-[10px] font-semibold transition-colors cursor-pointer capitalize ${
-                  filter.status === st 
-                    ? 'bg-[#6366F1] text-white shadow-xs dark:bg-[#6366F1]' 
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200'
-                }`}
-              >
-                {st === 'todos' ? 'Todos' : st === 'Pagado' ? 'Pagados' : st === 'Cancelado' ? 'Cancelados' : st === 'Vencido' ? 'Vencidos' : 'Por Cobrar'}
-              </button>
-            ))}
+          {/* Status selector */}
+          <div className="lg:col-span-2">
+            <select
+              value={filter.status}
+              onChange={(e) => handleFilterUpdate({ status: e.target.value })}
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold focus:ring-2 focus:ring-[#6366F1] focus:border-[#6366F1] outline-none cursor-pointer dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+            >
+              <option value="todos">Todos</option>
+              <option value="Pagado">Pagados</option>
+              <option value="Cobrar">Por Cobrar</option>
+              <option value="Cancelado">Cancelados</option>
+              <option value="Vencido">Vencidos</option>
+            </select>
           </div>
         </div>
 

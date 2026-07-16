@@ -240,7 +240,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           {isSuperadmin && (
             <button
               onClick={() => onShowDiscountModal && onShowDiscountModal()}
-              className="btn bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1.5 px-3.5 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs dark:bg-emerald-600 dark:hover:bg-emerald-750"
+              className="btn btn-success"
             >
               <DollarSign className="w-4 h-4" />
               Dar Descuento
@@ -248,7 +248,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           )}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="btn bg-[#6366F1] hover:bg-[#4f46e5] text-white font-semibold py-1.5 px-3.5 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs dark:bg-[#6366F1] dark:hover:bg-[#4f46e5]"
+            className="btn btn-primary"
           >
             <PlusCircle className="w-4 h-4" />
             Nuevo Registro
@@ -581,19 +581,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                   setActiveAbonoTxId(null);
                                   setInlineAbonoVal('');
                                 }}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded cursor-pointer shadow-sm transition-colors dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                                title="Confirmar abono"
+                                 className="btn btn-success p-1.5 rounded cursor-pointer"
+                                 title="Confirmar abono"
                               >
                                 <Check className="w-4 h-4" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setActiveAbonoTxId(null)}
-                                className="bg-slate-200 hover:bg-slate-300 text-slate-700 p-1.5 rounded cursor-pointer shadow-sm transition-colors dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200"
-                                title="Cancelar"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
+                                 className="btn btn-secondary p-1.5 rounded cursor-pointer"
+                                 title="Cancelar"
+                               >
+                                 <X className="w-4 h-4" />
+                               </button>
                             </div>
                             {inlineAbonoErr && (
                               <span className="text-[10px] text-rose-600 font-bold dark:text-rose-400">{inlineAbonoErr}</span>
@@ -995,7 +995,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedClientDetails(null)}
-                  className="btn bg-white dark:bg-slate-800 text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold px-4 py-2"
+                  className="btn btn-secondary"
                 >
                   Cerrar
                 </button>

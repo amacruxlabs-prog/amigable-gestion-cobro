@@ -432,8 +432,7 @@ const BusinessesView = () => {
         <h3 className="text-lg font-bold text-slate-800">Listado de Inquilinos (Tenants)</h3>
         <button 
           onClick={() => setShowModal(true)}
-          className="btn btn-primary flex items-center gap-2"
-          style={{ background: 'var(--color-brand)', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 'bold' }}
+          className="btn btn-primary"
         >
           <Plus className="w-4 h-4" />
           Crear Nuevo Negocio
@@ -588,8 +587,8 @@ const BusinessesView = () => {
                 </>
               )}
               <div className="flex justify-end gap-2 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 font-bold text-slate-500 bg-slate-100 rounded hover:bg-slate-200">Cancelar</button>
-                <button type="submit" disabled={formik.isSubmitting || !formik.isValid} className="px-4 py-2 font-bold text-white rounded disabled:opacity-50" style={{ background: 'var(--color-brand)' }}>
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">Cancelar</button>
+                <button type="submit" disabled={formik.isSubmitting || !formik.isValid} className="btn btn-primary">
                   {formik.isSubmitting ? 'Guardando...' : 'Guardar Negocio'}
                 </button>
               </div>
@@ -796,14 +795,14 @@ const BusinessesView = () => {
               <button
                 type="button"
                 onClick={() => handleOpenEdit(selectedBusinessDetails.business)}
-                className="btn bg-indigo-50 hover:bg-indigo-100 text-indigo-650 font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                className="btn btn-primary"
               >
                 Editar Datos
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedBusinessDetails(null)}
-                className="btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                className="btn btn-secondary"
               >
                 Cerrar
               </button>
@@ -898,15 +897,14 @@ const BusinessesView = () => {
                 <button 
                   type="button" 
                   onClick={() => setEditingBusiness(null)} 
-                  className="px-4 py-2 font-bold text-slate-500 bg-slate-100 rounded hover:bg-slate-200 cursor-pointer"
+                  className="btn btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
                   disabled={editFormik.isSubmitting || !editFormik.isValid} 
-                  className="px-4 py-2 font-bold text-white rounded disabled:opacity-50 cursor-pointer" 
-                  style={{ background: 'var(--color-brand)' }}
+                  className="btn btn-primary"
                 >
                   {editFormik.isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
@@ -996,7 +994,7 @@ const SettingsView = () => {
                 <button 
                   type="submit"
                   disabled={formik.isSubmitting}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                  className="btn btn-primary"
                 >
                   {formik.isSubmitting ? 'Guardando...' : 'Guardar Ajustes Básicos'}
                 </button>

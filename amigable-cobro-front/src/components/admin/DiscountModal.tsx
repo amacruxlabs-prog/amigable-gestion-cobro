@@ -145,11 +145,11 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, t
         </div>
 
         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+          <button onClick={onClose} className="btn btn-secondary">
             Cancelar
           </button>
           <button onClick={handleSubmit} disabled={loading || selectedIds.size === 0 || !percentage}
-            className="btn-primary py-2 px-6 hover:opacity-95 shadow-sm">
+            className="btn btn-primary">
             {loading ? "Aplicando..." : `Aplicar Descuento a ${selectedIds.size}`}
           </button>
         </div>

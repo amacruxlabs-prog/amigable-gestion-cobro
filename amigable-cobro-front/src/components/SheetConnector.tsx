@@ -630,13 +630,13 @@ export const SheetConnector: React.FC<SheetConnectorProps> = ({
             <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-150 dark:border-slate-800 flex justify-end gap-3">
               <button 
                 onClick={() => setPreviewTransactions(null)} 
-                className="btn bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                className="btn btn-secondary"
               >
                 <X className="w-4.5 h-4.5 mr-1.5 inline" /> Cancelar
               </button>
               <button 
                 onClick={() => importToBackend(previewTransactions, previewHeaders, previewMapping!, previewSourceName)}
-                className="btn bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md cursor-pointer"
+                className="btn btn-primary"
               >
                 <Save className="w-4.5 h-4.5 mr-1.5 inline" /> Confirmar y Generar Deudas
               </button>

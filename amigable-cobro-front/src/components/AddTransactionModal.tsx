@@ -404,14 +404,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-white border border-slate-200 rounded font-bold hover:bg-slate-50"
+              className="btn btn-secondary"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={formik.isSubmitting}
-              className="px-4 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700"
+              className="btn btn-primary"
             >
               {formik.isSubmitting ? 'Guardando...' : 'Guardar Cuenta'}
             </button>

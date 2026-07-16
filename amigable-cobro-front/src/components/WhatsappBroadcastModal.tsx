@@ -545,7 +545,7 @@ export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({
                 <button
                   onClick={startSendWizard}
                   disabled={targetClients.length === 0 || selectedTxIds.size === 0}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#6366F1] hover:bg-[#4f46e5] text-white font-bold text-sm py-2.5 px-6 rounded-md cursor-pointer disabled:opacity-50 disabled:pointer-events-none shadow-sm transition-all"
+                  className="btn btn-primary"
                 >
                   <Play className="w-4 h-4 fill-white" />
                   <span>Iniciar Asistente ({selectedTxIds.size})</span>
@@ -628,13 +628,13 @@ export const WhatsappBroadcastModal: React.FC<WhatsappBroadcastModalProps> = ({
                       <div className="grid grid-cols-2 gap-3 pt-1">
                         <button
                           onClick={() => handleWizardAction('skip')}
-                          className="py-2.5 rounded-md border border-slate-300 dark:border-slate-700 bg-[#FFFFFF] dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm transition cursor-pointer shadow-sm"
+                          className="btn btn-secondary"
                         >
                           Saltar
                         </button>
                         <button
                           onClick={() => handleWizardAction('send')}
-                          className="py-2.5 rounded-md bg-[#6366F1] hover:bg-[#4f46e5] text-white font-bold text-sm transition cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                          className="btn btn-primary"
                         >
                           <Send className="w-4 h-4" />
                           Enviar

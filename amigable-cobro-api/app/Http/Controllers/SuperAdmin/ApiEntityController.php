@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use App\Models\ApiEntity;
 use App\Models\ApiEntityToken;
@@ -33,6 +34,10 @@ class ApiEntityController extends Controller
             'is_active' => true,
         ]);
 
+        ActivityLogger::log('created', "Creó la entidad API {$entity->name}", 'api_entity', (string)$entity->id, null, [
+            'name' => $entity->name,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Entidad creada exitosamente',
@@ -52,6 +57,11 @@ class ApiEntityController extends Controller
 
         $entity->update($request->only(['name', 'description', 'is_active']));
 
+        ActivityLogger::log('updated', "Actualizó la entidad API {$entity->name}", 'api_entity', (string)$id, null, [
+            'name' => $entity->name,
+            'is_active' => $entity->is_active,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Entidad actualizada',
@@ -62,7 +72,12 @@ class ApiEntityController extends Controller
     public function destroy(Request $request, $id)
     {
         $entity = ApiEntity::findOrFail($id);
+        $entityName = $entity->name;
         $entity->delete();
+
+        ActivityLogger::log('deleted', "Eliminó la entidad API {$entityName}", 'api_entity', (string)$id, [
+            'name' => $entityName,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -89,6 +104,12 @@ class ApiEntityController extends Controller
             'expires_at' => $request->expires_at,
         ]);
 
+        ActivityLogger::log('created', "Generó token API '{$token->name}' para entidad {$entity->name}", 'api_token', (string)$token->id, null, [
+            'entity_name' => $entity->name,
+            'token_name' => $token->name,
+            'abilities' => $token->abilities,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Token generado exitosamente.',
@@ -101,7 +122,13 @@ class ApiEntityController extends Controller
         $entity = ApiEntity::findOrFail($id);
         
         $token = $entity->tokens()->findOrFail($tokenId);
+        $tokenName = $token->name;
         $token->delete();
+
+        ActivityLogger::log('deleted', "Revocó token API '{$tokenName}' de entidad {$entity->name}", 'api_token', (string)$tokenId, [
+            'entity_name' => $entity->name,
+            'token_name' => $tokenName,
+        ]);
 
         return response()->json([
             'success' => true,

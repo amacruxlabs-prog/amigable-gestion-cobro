@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -52,6 +53,12 @@ class UserController extends Controller
             $user->assignRole($request->role);
         }
 
+        ActivityLogger::log('created', "Creó el usuario {$request->name} ({$request->email}) con rol {$request->role}", 'user', (string)$user->id, null, [
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+        ]);
+
         return $this->successResponse($user->load('roles'), 'Usuario creado exitosamente.', 201);
     }
 
@@ -79,6 +86,13 @@ class UserController extends Controller
 
         $user->save();
 
+        ActivityLogger::log('updated', "Actualizó el usuario {$user->name}", 'user', (string)$id, [
+            'name' => $user->getOriginal('name'),
+        ], [
+            'name' => $user->name,
+            'role' => $request->role ?? null,
+        ]);
+
         return $this->successResponse($user->load('roles'), 'Usuario actualizado');
     }
 
@@ -95,8 +109,15 @@ class UserController extends Controller
             return $this->errorResponse('No puedes desactivar tu propia cuenta', 'FORBIDDEN', null, 403);
         }
 
+        $oldStatus = $user->status;
         $user->status = $user->status === 'activo' ? 'inactivo' : 'activo';
         $user->save();
+
+        ActivityLogger::log('status_change', "Cambió el estado del usuario {$user->name} de {$oldStatus} a {$user->status}", 'user', (string)$id, [
+            'status' => $oldStatus,
+        ], [
+            'status' => $user->status,
+        ]);
 
         return $this->successResponse(['status' => $user->status], 'Estado actualizado');
     }
@@ -117,6 +138,8 @@ class UserController extends Controller
         $user->password = Hash::make($request->password);
         $user->save();
 
+        ActivityLogger::log('password_change', "Cambió la contraseña del usuario {$user->name}", 'user', (string)$id);
+
         return $this->successResponse(null, 'Contraseña actualizada');
     }
 
@@ -133,7 +156,14 @@ class UserController extends Controller
             return $this->errorResponse('No puedes eliminar tu propia cuenta', 'FORBIDDEN', null, 403);
         }
 
+        $userName = $user->name;
+        $userEmail = $user->email;
         $user->delete();
+
+        ActivityLogger::log('deleted', "Eliminó al usuario {$userName} ({$userEmail})", 'user', (string)$id, [
+            'name' => $userName,
+            'email' => $userEmail,
+        ]);
 
         return $this->successResponse(null, 'Usuario eliminado');
     }

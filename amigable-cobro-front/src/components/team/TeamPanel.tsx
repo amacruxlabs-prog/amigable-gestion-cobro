@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useUsers } from '../../hooks/useUsers';
 import { useUI } from '../../contexts/UIContext';
+import { ActivityLogTable } from '../ActivityLogTable';
 
 type MemberRole = 'Admin Negocio' | 'Admin Local' | 'Lectura';
 
@@ -355,10 +356,7 @@ export const TeamPanel: React.FC = () => {
 
         {activeTab === 'activity' && (
           <div className="space-y-2">
-             <div className="card text-center py-8 opacity-70">
-                <Activity className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-                <p className="text-sm">El registro de actividad estará disponible en futuras actualizaciones.</p>
-             </div>
+            <ActivityLogTable endpoint="/tenant/activity-logs" />
           </div>
         )}
       </div>

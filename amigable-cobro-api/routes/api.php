@@ -16,6 +16,7 @@ Route::group(['prefix' => 'auth'], function () {
 use App\Http\Controllers\SuperAdmin\BusinessController;
 use App\Http\Controllers\SuperAdmin\SaasAnalyticsController;
 use App\Http\Controllers\SuperAdmin\GlobalSettingsController;
+use App\Http\Controllers\SuperAdmin\ActivityLogController as SuperAdminActivityLogController;
 
 Route::group(['prefix' => 'superadmin', 'middleware' => 'auth:api'], function () {
     Route::get('kpis', [SaasAnalyticsController::class, 'kpis']);
@@ -36,6 +37,7 @@ Route::group(['prefix' => 'superadmin', 'middleware' => 'auth:api'], function ()
     Route::delete('api-entities/{id}', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'destroy']);
     Route::post('api-entities/{id}/tokens', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'storeToken']);
     Route::delete('api-entities/{id}/tokens/{tokenId}', [\App\Http\Controllers\SuperAdmin\ApiEntityController::class, 'revokeToken']);
+    Route::get('activity-logs', [SuperAdminActivityLogController::class, 'index']);
 });
 
 use App\Http\Controllers\Tenant\TransactionController;
@@ -44,6 +46,7 @@ use App\Http\Controllers\Tenant\WhatsAppController;
 use App\Http\Controllers\Tenant\SyncController;
 use App\Http\Controllers\Tenant\SettingsController;
 use App\Http\Controllers\Tenant\UserController;
+use App\Http\Controllers\Tenant\ActivityLogController as TenantActivityLogController;
 
 Route::group([
     'prefix' => 'tenant', 
@@ -81,6 +84,7 @@ Route::group([
     Route::delete('transactions/{id}', [TransactionController::class, 'destroy']);
     Route::post('transactions/{id}/payment', [TransactionController::class, 'addPayment']);
     Route::post('transactions/apply-discount', [TransactionController::class, 'applyDiscount']);
+    Route::get('activity-logs', [TenantActivityLogController::class, 'index']);
 });
 
 // ==== API Externa de Integración ====

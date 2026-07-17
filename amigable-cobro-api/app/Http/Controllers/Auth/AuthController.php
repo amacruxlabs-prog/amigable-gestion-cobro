@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
@@ -33,6 +34,8 @@ class AuthController extends Controller
 
         $token = auth('api')->login($user);
 
+        ActivityLogger::log('login', "Inició sesión {$user->email}", 'user', (string)$user->id);
+
         return $this->respondWithToken($token);
     }
 
@@ -49,7 +52,13 @@ class AuthController extends Controller
      */
     public function logout()
     {
+        $user = auth('api')->user();
         auth('api')->logout();
+
+        if ($user) {
+            ActivityLogger::log('logout', "Cerró sesión {$user->email}", 'user', (string)$user->id);
+        }
+
         return $this->successResponse(null, 'Sesión cerrada exitosamente.');
     }
 
@@ -66,6 +75,8 @@ class AuthController extends Controller
                 });
                 $ttl = $isAdmin ? 5256000 : 10080;
                 auth('api')->factory()->setTTL($ttl);
+
+                ActivityLogger::log('refresh', "Refrescó token de sesión {$user->email}", 'user', (string)$user->id);
             }
             
             return $this->respondWithToken(auth('api')->refresh());

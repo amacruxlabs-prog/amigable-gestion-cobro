@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ExternalApi;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Payment;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -97,6 +98,8 @@ class CollectionController extends Controller
 
         Cache::forget("business_{$business->id}_dashboard");
 
+        ActivityLogger::log('created', "[API] Creó cuenta de {$validated['client_name']} por $" . number_format($validated['total_amount'], 2), 'transaction', (string)$transaction->id, null, $validated, $business->id);
+
         return $this->successResponse(
             ['id' => $transaction->id],
             'Cuenta creada',
@@ -169,6 +172,12 @@ class CollectionController extends Controller
         
         Cache::forget("business_{$business->id}_dashboard");
 
+        ActivityLogger::log('payment', "[API] Registró abono de $" . number_format($validated['amount'], 2) . " a cuenta de {$transaction->client_name}", 'transaction', (string)$transaction->id, null, [
+            'payment_amount' => $validated['amount'],
+            'new_paid_amount' => (float) $transaction->paid_amount,
+            'new_status' => $transaction->status,
+        ], $business->id);
+
         return $this->successResponse([
             'new_paid_amount' => (float) $transaction->paid_amount,
             'new_status' => $transaction->status,
@@ -187,9 +196,16 @@ class CollectionController extends Controller
             ->where('business_id', $business->id)
             ->firstOrFail();
 
+        $oldStatus = $transaction->status;
         $transaction->update(['status' => $validated['status']]);
         
         Cache::forget("business_{$business->id}_dashboard");
+
+        ActivityLogger::log('status_change', "[API] Cambió estado de cuenta {$transaction->client_name} de {$oldStatus} a {$validated['status']}", 'transaction', (string)$transaction->id, [
+            'status' => $oldStatus,
+        ], [
+            'status' => $validated['status'],
+        ], $business->id);
 
         return $this->successResponse(null, 'Estado actualizado');
     }
@@ -213,6 +229,8 @@ class CollectionController extends Controller
 
         $transaction->update($validated);
         Cache::forget("business_{$business->id}_dashboard");
+
+        ActivityLogger::log('updated', "[API] Actualizó cuenta de {$transaction->client_name}", 'transaction', (string)$transaction->id, null, $validated, $business->id);
 
         return $this->successResponse(null, 'Cuenta actualizada');
     }
@@ -273,6 +291,11 @@ class CollectionController extends Controller
             DB::commit();
 
             Cache::forget("business_{$business->id}_dashboard");
+
+            ActivityLogger::log('discount', "[API] Aplicó descuento masivo del {$pct}% a " . count($transactions) . " cuentas", 'transaction', null, null, [
+                'percentage' => $pct,
+                'transaction_ids' => $txIds,
+            ], $business->id);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->errorResponse("Error al aplicar descuento: " . $e->getMessage(), "DISCOUNT_ERROR", null, 500);

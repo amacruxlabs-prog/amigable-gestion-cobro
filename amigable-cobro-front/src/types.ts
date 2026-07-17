@@ -45,3 +45,27 @@ export interface ClientStats {
   paidAmount: number;
   receivableAmount: number;
 }
+
+export interface ActivityLog {
+  id: number;
+  business_id: number | null;
+  user_id: number | null;
+  user_email: string | null;
+  action_type: string;
+  description: string | null;
+  auditable_type: string | null;
+  auditable_id: string | null;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface ActivityLogFilters {
+  action_type?: string;
+  user_id?: string;
+  date_from?: string;
+  date_to?: string;
+  auditable_type?: string;
+}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreTransactionRequest;
 use App\Http\Requests\Tenant\UpdateTransactionRequest;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -120,6 +121,13 @@ class TransactionController extends Controller
 
         Cache::forget("business_{$businessId}_dashboard");
 
+        ActivityLogger::log('created', "Creó la cuenta de {$request->client_name} por $" . number_format($request->total_amount, 2), 'transaction', (string)$transactionId, null, [
+            'client_name' => $request->client_name,
+            'client_document' => $request->client_document,
+            'total_amount' => $request->total_amount,
+            'status' => $request->status,
+        ]);
+
         return $this->successResponse(['id' => $transactionId], 'Transacción creada', 201);
     }
 
@@ -139,12 +147,21 @@ class TransactionController extends Controller
 
         Cache::forget("business_{$businessId}_dashboard");
 
+        ActivityLogger::log('updated', 'Actualizó la cuenta de ' . $transaction->client_name, 'transaction', (string)$id, [
+            'client_name' => $transaction->client_name,
+            'client_document' => $transaction->client_document,
+            'client_phone' => $transaction->client_phone,
+            'total_amount' => $transaction->total_amount,
+            'status' => $transaction->status,
+        ], $updateData);
+
         return $this->successResponse(null, 'Transacción actualizada');
     }
 
     public function destroy($id)
     {
         $businessId = $this->getBusinessId();
+        $transaction = DB::table('transactions')->where('id', $id)->where('business_id', $businessId)->first();
         $deleted = DB::table('transactions')->where('id', $id)->where('business_id', $businessId)->delete();
         
         if (!$deleted) {
@@ -152,6 +169,12 @@ class TransactionController extends Controller
         }
 
         Cache::forget("business_{$businessId}_dashboard");
+
+        ActivityLogger::log('deleted', 'Eliminó la cuenta de ' . ($transaction->client_name ?? "ID {$id}"), 'transaction', (string)$id, [
+            'client_name' => $transaction->client_name ?? null,
+            'total_amount' => $transaction->total_amount ?? null,
+            'status' => $transaction->status ?? null,
+        ]);
 
         return $this->successResponse(null, 'Transacción eliminada');
     }
@@ -191,6 +214,15 @@ class TransactionController extends Controller
         ]);
 
         Cache::forget("business_{$businessId}_dashboard");
+
+        ActivityLogger::log('payment', "Registró abono de $" . number_format($request->amount, 2) . " a cuenta de {$transaction->client_name}", 'transaction', (string)$id, [
+            'paid_amount' => (float)$transaction->paid_amount,
+            'status' => $transaction->status,
+        ], [
+            'paid_amount' => (float)$newPaidAmount,
+            'status' => $status,
+            'payment_amount' => (float)$request->amount,
+        ]);
 
         return $this->successResponse(['paid_amount' => $newPaidAmount, 'status' => $status], 'Abono registrado');
     }
@@ -281,6 +313,12 @@ class TransactionController extends Controller
             DB::commit();
 
             Cache::forget("business_{$businessId}_dashboard");
+
+            ActivityLogger::log('discount', "Aplicó descuento masivo del {$pct}% a " . count($transactions) . " cuentas", 'transaction', null, null, [
+                'percentage' => $pct,
+                'transaction_ids' => $txIds,
+                'affected_count' => count($transactions),
+            ]);
 
             return $this->successResponse(null, 'Descuentos masivos aplicados e históricos registrados exitosamente.');
 

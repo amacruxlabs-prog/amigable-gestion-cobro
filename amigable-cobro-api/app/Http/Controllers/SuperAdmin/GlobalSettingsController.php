@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -73,6 +74,10 @@ class GlobalSettingsController extends Controller
         }
 
         Storage::disk('local')->put($this->settingsFile, json_encode($settings));
+
+        ActivityLogger::log('updated', 'Actualizó los ajustes globales del sistema', 'settings', 'global', null, [
+            'settings_keys' => array_keys($settings),
+        ]);
 
         return $this->successResponse($settings, 'Ajustes globales actualizados');
     }

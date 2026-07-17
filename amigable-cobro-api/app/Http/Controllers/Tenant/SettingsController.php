@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -94,6 +95,10 @@ class SettingsController extends Controller
 
         // Guardamos en la base de datos la configuración del tenant.
         DB::table('businesses')->where('id', $businessId)->update(['settings' => json_encode($settings)]);
+
+        ActivityLogger::log('updated', 'Actualizó la configuración del negocio', 'settings', (string)$businessId, null, [
+            'settings_keys' => array_keys($settings),
+        ]);
 
         return $this->successResponse(null, 'Configuración guardada correctamente en el backend');
     }

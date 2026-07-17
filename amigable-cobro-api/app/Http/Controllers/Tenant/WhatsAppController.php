@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,11 @@ class WhatsAppController extends Controller
 
         // We can create a table 'whatsapp_logs' later, for now we return success
         // DB::table('whatsapp_logs')->insert($logs);
+
+        ActivityLogger::log('broadcast', "Envió difusión WhatsApp a " . count($logs) . " destinatarios", 'whatsapp', null, null, [
+            'audience_count' => count($logs),
+            'message_preview' => mb_substr($request->message, 0, 200),
+        ]);
 
         return $this->successResponse(['sent_count' => count($logs)], 'Difusión completada (Emulación)');
     }

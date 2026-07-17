@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -44,6 +45,11 @@ class SyncController extends Controller
         if ($imported > 0) {
             Cache::forget("business_{$businessId}_dashboard");
         }
+
+        ActivityLogger::log('import', "Importó {$imported} cuentas ({$errors} errores)", 'sync', null, null, [
+            'imported' => $imported,
+            'errors' => $errors,
+        ]);
 
         return $this->successResponse([
             'imported' => $imported,

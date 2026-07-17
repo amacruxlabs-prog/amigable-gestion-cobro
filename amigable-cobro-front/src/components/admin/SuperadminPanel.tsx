@@ -24,6 +24,7 @@ import * as Yup from 'yup';
 import { useUI } from '../../contexts/UIContext';
 import { api } from '../../lib/axios';
 import { SettingsPanel } from '../settings/SettingsPanel';
+import { ActivityLogTable } from '../ActivityLogTable';
 
 type TabType = 'dashboard' | 'businesses' | 'logs' | 'settings';
 
@@ -918,11 +919,7 @@ const BusinessesView = () => {
 };
 
 const LogsView = () => (
-  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-500">
-    <History className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-    <h3 className="text-lg font-bold text-slate-700">Auditoría Global (Maqueta)</h3>
-    <p className="text-sm mt-1">Aquí se mostrará el registro de actividad de toda la plataforma.</p>
-  </div>
+  <ActivityLogTable endpoint="/superadmin/activity-logs" />
 );
 
 const SettingsView = () => {

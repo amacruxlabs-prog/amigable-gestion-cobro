@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBusinessRequest;
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -66,6 +67,13 @@ class BusinessController extends Controller
 
             DB::commit();
 
+            ActivityLogger::log('created', "Creó el negocio {$request->name}", 'business', (string)$businessId, null, [
+                'name' => $request->name,
+                'owner_name' => $request->owner_name,
+                'whatsapp_phone' => $request->whatsapp_phone,
+                'assign_to_me' => $request->assign_to_me ?? false,
+            ]);
+
             return $this->successResponse([
                 'business_id' => $businessId,
                 'user_id' => $userId
@@ -103,6 +111,12 @@ class BusinessController extends Controller
         $newStatus = $business->status === 'ACTIVE' ? 'suspended' : 'ACTIVE';
         DB::table('businesses')->where('id', $id)->update(['status' => $newStatus, 'updated_at' => now()]);
 
+        ActivityLogger::log('status_change', "Cambió el estado del negocio {$business->name} de {$business->status} a {$newStatus}", 'business', (string)$id, [
+            'status' => $business->status,
+        ], [
+            'status' => $newStatus,
+        ]);
+
         return $this->successResponse(['status' => $newStatus], "Estado actualizado a $newStatus");
     }
 
@@ -123,6 +137,10 @@ class BusinessController extends Controller
 
         // Generamos un nuevo token que ahora contendrá los claims actualizados
         $token = auth()->login($user);
+
+        ActivityLogger::log('impersonate', "Cambió al negocio ID " . ($request->business_id ?? 'sin negocio (superadmin)'), 'business', $request->business_id ? (string)$request->business_id : null, null, [
+            'new_business_id' => $request->business_id,
+        ]);
 
         return $this->successResponse([
             'token' => $token,
@@ -279,6 +297,18 @@ class BusinessController extends Controller
             }
 
             DB::commit();
+
+            ActivityLogger::log('updated', "Actualizó el negocio {$business->name}", 'business', (string)$id, [
+                'name' => $business->name,
+                'owner_name' => $business->owner_name,
+                'whatsapp_phone' => $business->whatsapp_phone,
+                'status' => $business->status,
+            ], [
+                'name' => $request->name,
+                'owner_name' => $request->owner_name,
+                'whatsapp_phone' => $request->whatsapp_phone,
+                'status' => $request->status,
+            ]);
 
             return $this->successResponse(null, 'Negocio y accesos actualizados exitosamente.');
 

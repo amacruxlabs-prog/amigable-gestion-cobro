@@ -41,17 +41,19 @@ export const ActivityLogTable = ({ endpoint = '/tenant/activity-logs' }: Activit
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-slate-150 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div>
-          <h4 className="text-base font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-            <History className="w-4 h-4 text-indigo-500" />
-            Registro de Actividad
-          </h4>
-          <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{total} eventos registrados</p>
+      <div className="p-4 border-b border-slate-150 dark:border-slate-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-base font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
+              <History className="w-4 h-4 text-indigo-500" />
+              Registro de Actividad
+            </h4>
+            <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{total} eventos registrados</p>
+          </div>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={filters.action_type || ''}
             onChange={(e) => setFilters({ ...filters, action_type: e.target.value || undefined })}

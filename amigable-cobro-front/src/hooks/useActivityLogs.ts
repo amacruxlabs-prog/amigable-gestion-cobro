@@ -13,7 +13,7 @@ export const useActivityLogs = (endpoint: '/tenant/activity-logs' | '/superadmin
   const fetchLogs = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const params: Record<string, any> = { page, per_page: 50 };
+      const params: Record<string, any> = { page, per_page: 15 };
       if (filters.action_type) params.action_type = filters.action_type;
       if (filters.user_id) params.user_id = filters.user_id;
       if (filters.date_from) params.date_from = filters.date_from;

@@ -53,11 +53,11 @@ export const ActivityLogTable = ({ endpoint = '/tenant/activity-logs' }: Activit
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="grid grid-cols-3 gap-2">
           <select
             value={filters.action_type || ''}
             onChange={(e) => setFilters({ ...filters, action_type: e.target.value || undefined })}
-            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 w-full"
           >
             <option value="">Todas las acciones</option>
             {Object.entries(ACTION_LABELS).map(([key, val]) => (
@@ -69,7 +69,7 @@ export const ActivityLogTable = ({ endpoint = '/tenant/activity-logs' }: Activit
             type="date"
             value={filters.date_from || ''}
             onChange={(e) => setFilters({ ...filters, date_from: e.target.value || undefined })}
-            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 w-full"
             placeholder="Desde"
           />
 
@@ -77,7 +77,7 @@ export const ActivityLogTable = ({ endpoint = '/tenant/activity-logs' }: Activit
             type="date"
             value={filters.date_to || ''}
             onChange={(e) => setFilters({ ...filters, date_to: e.target.value || undefined })}
-            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 w-full"
             placeholder="Hasta"
           />
         </div>

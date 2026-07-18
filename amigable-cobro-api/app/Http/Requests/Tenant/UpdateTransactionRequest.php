@@ -20,6 +20,7 @@ class UpdateTransactionRequest extends FormRequest
             'total_amount' => 'sometimes|numeric|min:0',
             'paid_amount' => 'sometimes|numeric|min:0',
             'status' => 'sometimes|in:PENDING,PAID',
+            'due_date' => 'sometimes|nullable|date',
         ];
     }
 }

@@ -87,6 +87,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       paidAmount: '',
       status: 'Cobrar',
       date: new Date().toISOString().substring(0, 10),
+      dueDate: new Date().toISOString().substring(0, 10),
       phone: '',
       phoneCountryCode: '+58',
       location: '',
@@ -126,6 +127,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         amount: amt,
         status: values.status === 'Pagado' ? 'Pagado' : initialPaid === amt ? 'Pagado' : 'Cobrar',
         date: values.date,
+        dueDate: values.dueDate,
         phone: finalPhone,
         cedula: finalCed,
         location: values.location.trim() || undefined,
@@ -362,7 +364,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     type="date"
                     name="date"
                     value={formik.values.date}
-                    onChange={formik.handleChange}
+                    onChange={(e) => {
+                      formik.handleChange(e);
+                      if (!formik.values.dueDate) {
+                        formik.setFieldValue('dueDate', e.target.value);
+                      }
+                    }}
                     className="w-full border p-2 rounded"
                   />
                   <div className="flex gap-1 mt-1.5 flex-wrap">
@@ -393,6 +400,36 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
                     >
                       +1 mes
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">Fecha de Vencimiento</label>
+                  <input
+                    type="date"
+                    name="dueDate"
+                    value={formik.values.dueDate}
+                    onChange={formik.handleChange}
+                    className="w-full border p-2 rounded"
+                  />
+                  <div className="flex gap-1 mt-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => formik.setFieldValue('dueDate', formik.values.date)}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      = Emisión
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date(formik.values.date);
+                        d.setDate(d.getDate() + 30);
+                        formik.setFieldValue('dueDate', d.toISOString().substring(0, 10));
+                      }}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      +30 días
                     </button>
                   </div>
                 </div>

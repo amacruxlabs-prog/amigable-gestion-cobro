@@ -1,16 +1,21 @@
 import React from 'react';
 import { Transaction, FilterState } from '../types';
 import { formatCurrency, formatDate, getVenezuelaTodayStr } from '../utils/format';
-import { Search, ChevronLeft, ChevronRight, Filter, Calendar, DollarSign, PlusCircle, Trash2, CheckCircle2, AlertCircle, XCircle, Phone, Plus, Check, X, History, MapPin, User, UserPlus, Users } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Filter, Calendar, DollarSign, PlusCircle, Trash2, CheckCircle2, AlertCircle, XCircle, Phone, Plus, Check, X, History, MapPin, User, UserPlus, Users, Loader2 } from 'lucide-react';
 import { useTransactionTable } from '../hooks/useTransactionTable';
 import { AddTransactionModal } from './AddTransactionModal';
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  loading?: boolean;
   onToggleStatus: (id: string) => void;
   onRegisterPayment: (id: string, amount: number, date: string) => void;
+  onUpdatePayment: (txId: string, paymentId: number, amount: number) => void;
+  onDeletePayment: (txId: string, paymentId: number) => void;
+  onUpdateTransaction: (id: string, data: any) => void;
   onDeleteTransaction: (id: string) => void;
   onAddTransaction: (newTx: Omit<Transaction, 'id'>) => void;
+  onUpdateClient?: (oldName: string, data: { client_name: string; client_document?: string; client_phone?: string }) => void;
   filter: FilterState;
   onFilterChange: (newFilter: FilterState) => void;
   isSuperadmin?: boolean;
@@ -40,10 +45,15 @@ const parsePhoneNumber = (phoneStr?: string) => {
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
+  loading,
   onToggleStatus,
   onRegisterPayment,
+  onUpdatePayment,
+  onDeletePayment,
+  onUpdateTransaction,
   onDeleteTransaction,
   onAddTransaction,
+  onUpdateClient,
   filter,
   onFilterChange,
   isSuperadmin,
@@ -105,10 +115,95 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   });
 
   const [selectedClientDetails, setSelectedClientDetails] = React.useState<any | null>(null);
-  const [modalViewMode, setModalViewMode] = React.useState<'single' | 'all'>('single');
+  const [modalViewMode, setModalViewMode] = React.useState<'single' | 'all'>('all');
+  const [editingPayment, setEditingPayment] = React.useState<{ txId: string; paymentId: number; amount: number } | null>(null);
+  const [editingTxInModal, setEditingTxInModal] = React.useState<any | null>(null);
+  const [editingClient, setEditingClient] = React.useState(false);
+  const [savingClient, setSavingClient] = React.useState(false);
+  const [savingPayment, setSavingPayment] = React.useState(false);
+  const [savingTx, setSavingTx] = React.useState(false);
+  const [refreshingModal, setRefreshingModal] = React.useState(false);
+  const selectedClientNameRef = React.useRef<string | null>(null);
 
-  const handleClientClick = (clientName: string, clickedTxId?: string | number) => {
+  const groupedClients = React.useMemo(() => {
+    const map = new Map<string, {
+      name: string; cedula: string; phone: string; location: string;
+      totalAmount: number; totalPaid: number;
+      transactions: typeof paginatedTransactions;
+      status: string; paymentsCount: number;
+      payments: { id: number; amount: number; date: string }[];
+      discounts: { percentage: number; amount: number; date: string }[];
+    }>();
+    paginatedTransactions.forEach(t => {
+      const key = (t.clientName || '').trim().toLowerCase();
+      if (!key) return;
+      if (!map.has(key)) {
+        map.set(key, {
+          name: t.clientName,
+          cedula: t.cedula || '',
+          phone: t.phone || '',
+          location: t.location || '',
+          totalAmount: 0,
+          totalPaid: 0,
+          transactions: [],
+          status: 'Por cobrar',
+          paymentsCount: 0,
+          payments: [],
+          discounts: [],
+        });
+      }
+      const g = map.get(key)!;
+      g.transactions.push(t);
+      g.totalAmount += t.amount;
+      g.totalPaid += t.status === 'Pagado' ? t.amount : (t.paidAmount || 0);
+      if (t.cedula && !g.cedula) g.cedula = t.cedula;
+      if (t.phone && !g.phone) g.phone = t.phone;
+      if (t.location && !g.location) g.location = t.location;
+      if (t.payments) {
+        g.payments.push(...t.payments);
+        g.paymentsCount += t.payments.length;
+      }
+      if (t.discounts) g.discounts.push(...t.discounts);
+    });
+    map.forEach(g => {
+      const allPaid = g.transactions.every(tx => tx.status === 'Pagado');
+      const allCancelled = g.transactions.every(tx => tx.status === 'Cancelado');
+      g.status = allCancelled ? 'Cancelado' : allPaid ? 'Pagado' : 'Por cobrar';
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [paginatedTransactions]);
+
+  React.useEffect(() => {
+    if (!selectedClientNameRef.current) return;
+    const clientName = selectedClientNameRef.current;
     const clientTxs = transactions.filter(t => t.clientName && t.clientName.trim().toLowerCase() === clientName.trim().toLowerCase());
+    if (clientTxs.length === 0) {
+      setSelectedClientDetails(null);
+      selectedClientNameRef.current = null;
+      return;
+    }
+    const representative = clientTxs.find(t => t.phone || t.cedula || t.location) || clientTxs[0];
+    let totalDebt = 0;
+    let totalPaid = 0;
+    clientTxs.forEach(t => {
+      totalDebt += t.amount;
+      totalPaid += t.status === 'Pagado' ? t.amount : (t.paidAmount || 0);
+    });
+    const totalOutstanding = Math.max(0, totalDebt - totalPaid);
+    const paymentRate = totalDebt > 0 ? (totalPaid / totalDebt) * 100 : 0;
+    setRefreshingModal(false);
+    setSelectedClientDetails(prev => prev ? {
+      ...prev,
+      phone: representative.phone,
+      cedula: representative.cedula,
+      location: representative.location,
+      transactions: clientTxs,
+      stats: { totalDebt, totalPaid, totalOutstanding, paymentRate }
+    } : null);
+  }, [transactions]);
+
+  const handleClientClick = (clientName: string, clickedTxId?: string | number, preFilteredTxs?: any[]) => {
+    const clientTxs = preFilteredTxs || transactions.filter(t => t.clientName && t.clientName.trim().toLowerCase() === clientName.trim().toLowerCase());
     if (clientTxs.length === 0) return;
     const representative = clientTxs.find(t => t.phone || t.cedula || t.location) || clientTxs[0];
 
@@ -121,7 +216,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     const totalOutstanding = Math.max(0, totalDebt - totalPaid);
     const paymentRate = totalDebt > 0 ? (totalPaid / totalDebt) * 100 : 0;
 
-    setModalViewMode('single');
+    selectedClientNameRef.current = representative.clientName;
     setSelectedClientDetails({
       name: representative.clientName,
       phone: representative.phone,
@@ -399,25 +494,31 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
       </div>
 
-      {/* Transaction List */}
+      {/* Transaction List - Grouped by Client */}
       <div className="overflow-auto max-h-[60vh] border-y border-slate-200 dark:border-slate-800">
         <table>
           <thead className="sticky top-0 z-10 bg-slate-50 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
             <tr className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider dark:bg-slate-800 dark:text-slate-450">
-              <th className="py-3 px-6 text-[10px]">ID</th>
               <th className="py-3 px-6 text-[10px]">Cliente</th>
               <th className="py-3 px-6 text-[10px]">Cédula</th>
-              <th className="py-3 px-6 text-[10px]">Fecha</th>
               <th className="py-3 px-6 text-[10px]">Monto Total</th>
-              <th className="py-3 px-6 text-[10px] min-w-[200px]">Abonos y Saldo</th>
-              <th className="py-3 px-6 text-center text-[10px]">Estado de Pago</th>
-              <th className="py-3 px-6 text-right text-[10px]">Acción</th>
+              <th className="py-3 px-6 text-[10px] min-w-[200px]">Abonado / Saldo</th>
+              <th className="py-3 px-6 text-center text-[10px]">Estado</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-semibold dark:divide-slate-800">
-            {paginatedTransactions.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-slate-400">
+                <td colSpan={5} className="py-16 text-center text-slate-400">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                    <span className="text-sm font-semibold">Cargando cuentas...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : groupedClients.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-12 text-center text-slate-400">
                   <div className="flex flex-col items-center justify-center space-y-1">
                     <Filter className="w-6 h-6 text-slate-300 stroke-1" />
                     <span>No se encontraron resultados con los filtros seleccionados</span>
@@ -431,58 +532,57 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 </td>
               </tr>
             ) : (
-              paginatedTransactions.map((t) => {
-                const paid = t.status === 'Pagado' ? t.amount : (t.paidAmount || 0);
-                const pending = Math.max(0, t.amount - paid);
-                const ratio = Math.min(100, Math.round((paid / (t.amount || 1)) * 100));
+              groupedClients.map((g) => {
+                const allPaid = g.status === 'Pagado';
+                const pending = Math.max(0, g.totalAmount - g.totalPaid);
+                const ratio = Math.min(100, Math.round((g.totalPaid / (g.totalAmount || 1)) * 100));
 
                 return (
-                  <tr key={t.id} className="hover:bg-slate-50/60 transition-colors group dark:hover:bg-slate-800/60">
-                    <td className="py-3.5 px-6 font-mono text-slate-400 text-[11px]">{t.id}</td>
+                  <tr key={g.name} className="hover:bg-slate-50/60 transition-colors group dark:hover:bg-slate-800/60">
                     <td className="py-3.5 px-6 text-slate-900 font-bold dark:text-slate-100">
                       <div className="flex flex-col">
                         <button
                           type="button"
-                          onClick={() => handleClientClick(t.clientName, t.id)}
+                          onClick={() => handleClientClick(g.name, g.transactions[0]?.id, g.transactions)}
                           className="text-left font-bold text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline cursor-pointer flex items-center gap-1.5"
                           title="Ver estadísticas e historial del cliente"
                         >
                           <User className="w-3.5 h-3.5 text-indigo-500/70 inline" />
-                          <span>{t.clientName}</span>
+                          <span>{g.name}</span>
                         </button>
-                        {t.phone && (
+                        {g.phone && (
                           <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono mt-0.5 font-medium">
                             <Phone className="w-2.5 h-2.5" />
-                            {t.phone}
+                            {g.phone}
                           </span>
                         )}
-                        {t.location && (
+                        {g.location && (
                           <span className="text-[10px] text-[#06B6D4] flex items-center gap-1 font-mono mt-0.5 font-semibold" title="Ubicación del cliente">
                             <MapPin className="w-2.5 h-2.5 text-[#06B6D4]" />
-                            {t.location}
+                            {g.location}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-6 text-slate-500">{t.cedula || <span className="text-slate-300 italic">No esp.</span>}</td>
-                    <td className="py-3.5 px-6 text-slate-500">{formatDate(t.date)}</td>
+                    <td className="py-3.5 px-6 text-slate-500">{g.cedula || <span className="text-slate-300 italic">No esp.</span>}</td>
                     <td className="py-3.5 px-6 text-slate-900 font-bold font-mono text-sm text-[13px] dark:text-slate-100">
                       <div className="flex flex-col">
-                        <span>{formatMoney(t.amount)}</span>
-                        {t.discounts && t.discounts.length > 0 && (
+                        <span>{formatMoney(g.totalAmount)}</span>
+                        <span className="text-[10px] text-slate-400 font-mono font-medium">
+                          {g.transactions.length} cuenta{g.transactions.length !== 1 ? 's' : ''}
+                        </span>
+                        {g.discounts.length > 0 && (
                           <span className="text-[10px] text-purple-650 dark:text-purple-400 font-mono font-medium mt-0.5" title="Descuentos aplicados">
-                            Desc: {t.discounts.map(d => `${d.percentage}% (-${formatMoney(d.amount)})`).join(', ')}
+                            Desc: {g.discounts.map(d => `${d.percentage}% (-${formatMoney(d.amount)})`).join(', ')}
                           </span>
                         )}
                       </div>
                     </td>
-                    
-                    {/* Abonos y Saldo dynamic column */}
                     <td className="py-3.5 px-6">
                       <div className="flex flex-col gap-1 py-0.5 max-w-[220px]">
                         <div className="flex justify-between items-center text-[11px]">
                           <span className="text-emerald-700 font-bold font-mono" title="Monto abonado hasta ahora">
-                            {formatMoney(paid)}
+                            {formatMoney(g.totalPaid)}
                           </span>
                           {pending > 0 ? (
                             <span className="text-rose-600 dark:text-rose-400 font-bold font-mono" title="Monto restante">
@@ -494,182 +594,31 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             </span>
                           )}
                         </div>
-                        
-                        {/* Visual Progress Bar */}
                         <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden relative shadow-inner">
-                          <div 
+                          <div
                             className={`h-full transition-all duration-300 rounded-full ${
-                              t.status === 'Pagado' ? 'bg-emerald-500' : ratio > 60 ? 'bg-[#6366F1]' : ratio > 20 ? 'bg-[#06B6D4]' : 'bg-rose-500'
+                              allPaid ? 'bg-emerald-500' : ratio > 60 ? 'bg-[#6366F1]' : ratio > 20 ? 'bg-[#06B6D4]' : 'bg-rose-500'
                             }`}
                             style={{ width: `${ratio}%` }}
                           />
                         </div>
-
                         <div className="flex items-center justify-between mt-0.5 text-[10px]">
                           <span className="text-slate-450 dark:text-slate-500 font-mono font-medium">{ratio}% abonado</span>
-                          
-                          {/* Buttons and triggers */}
-                          <div className="flex items-center gap-1.5">
-                            {t.payments && t.payments.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => setShowHistoryTxId(showHistoryTxId === t.id ? null : t.id)}
-                                className={`text-slate-400 hover:text-[#6366F1] transition-colors p-0.5 rounded cursor-pointer ${
-                                  showHistoryTxId === t.id ? 'bg-[#6366F1]/10 text-[#6366F1] dark:bg-[#6366F1]/20 dark:text-indigo-400' : 'hover:bg-slate-100 dark:hover:bg-slate-700'
-                                }`}
-                                title="Ver historial de abonos"
-                              >
-                                <History className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            {t.status !== 'Pagado' && t.status !== 'Cancelado' && t.status !== 'Vencido' && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (activeAbonoTxId === t.id) {
-                                    setActiveAbonoTxId(null);
-                                  } else {
-                                    setActiveAbonoTxId(t.id);
-                                    setInlineAbonoVal('');
-                                    setInlineAbonoErr('');
-                                  }
-                                }}
-                                className={`transition-all font-bold px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5 cursor-pointer border ${
-                                  activeAbonoTxId === t.id 
-                                    ? 'bg-amber-600 border-amber-600 text-white dark:bg-amber-500 dark:border-amber-500 shadow-sm' 
-                                    : 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 shadow-sm dark:bg-indigo-600 dark:border-indigo-600 dark:text-white dark:hover:bg-indigo-700'
-                                }`}
-                                title="Registrar nuevo abono"
-                              >
-                                <Plus className="w-3 h-3" />
-                                <span>Abonar</span>
-                              </button>
-                            )}
-                          </div>
+                          {g.paymentsCount > 0 && (
+                            <span className="text-slate-400 font-mono">{g.paymentsCount} abono{g.paymentsCount !== 1 ? 's' : ''}</span>
+                          )}
                         </div>
-
-                        {/* Inline Abono Field */}
-                        {activeAbonoTxId === t.id && (
-                          <div className="mt-1.5 bg-white border border-[#6366F1]/20 rounded-lg p-2 flex flex-col gap-1 shadow-sm animate-fade-in text-[10px] dark:bg-slate-900 dark:border-slate-700">
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">Registrar nuevo abono:</span>
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="number"
-                                step="0.01"
-                                placeholder={`Máx $${pending}`}
-                                value={inlineAbonoVal}
-                                onChange={(e) => {
-                                  setInlineAbonoVal(e.target.value);
-                                  setInlineAbonoErr('');
-                                }}
-                                className="w-full p-1"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const val = parseFloat(inlineAbonoVal);
-                                  if (isNaN(val) || val <= 0) {
-                                    setInlineAbonoErr('Monto inválido');
-                                    return;
-                                  }
-                                  if (val > pending) {
-                                    setInlineAbonoErr('Excede saldo');
-                                    return;
-                                  }
-                                  onRegisterPayment(t.id, val, getVenezuelaTodayStr());
-                                  setActiveAbonoTxId(null);
-                                  setInlineAbonoVal('');
-                                }}
-                                 className="btn btn-success p-1.5 rounded cursor-pointer"
-                                 title="Confirmar abono"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setActiveAbonoTxId(null)}
-                                 className="btn btn-secondary p-1.5 rounded cursor-pointer"
-                                 title="Cancelar"
-                               >
-                                 <X className="w-4 h-4" />
-                               </button>
-                            </div>
-                            {inlineAbonoErr && (
-                              <span className="text-[10px] text-rose-600 font-bold dark:text-rose-400">{inlineAbonoErr}</span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Historical Payments Display */}
-                        {showHistoryTxId === t.id && t.payments && (
-                          <div className="mt-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2 flex flex-col gap-1 text-[10px] shadow-sm font-medium max-h-[100px] overflow-y-auto dark:bg-slate-900/50 dark:border-slate-700">
-                            <span className="font-bold text-slate-500 text-[9px] uppercase border-b border-slate-200 pb-0.5 dark:text-slate-400 dark:border-slate-700">Historial de abonos:</span>
-                            {t.payments.map((h, i) => (
-                              <div key={i} className="flex justify-between items-center text-[10px] font-mono border-b border-slate-100 last:border-none py-0.5 text-slate-600 dark:border-slate-800 dark:text-slate-300">
-                                <span>{formatDate(h.date)}</span>
-                                <span className="font-bold text-emerald-700 dark:text-emerald-400">+{formatMoney(h.amount)}</span>
-                              </div>
-                            ))}
-                            <button 
-                              type="button" 
-                              onClick={() => setShowHistoryTxId(null)} 
-                              className="text-[9px] text-[#06B6D4] hover:text-[#0891b2] hover:underline text-center font-bold mt-1 cursor-pointer dark:text-[#06B6D4]"
-                            >
-                              Ocultar historial
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </td>
-
                     <td className="py-3.5 px-6 text-center text-[11px]">
-                      <button
-                        onClick={() => onToggleStatus(t.id)}
-                        className={
-                          `badge ` + (
-                          t.status === 'Pagado'
-                            ? 'badge-success hover:brightness-95'
-                            : t.status === 'Cancelado'
-                            ? 'badge-slate cursor-default'
-                            : t.status === 'Vencido'
-                            ? 'badge-danger cursor-default'
-                            : 'badge-warning hover:brightness-95'
-                          )
-                        }
-                        title="Haz clic para alternar estado"
-                      >
-                        {t.status === 'Pagado' ? (
-                          <>
-                            <CheckCircle2 className="w-3 h-3" />
-                            Pagado
-                          </>
-                        ) : t.status === 'Cancelado' ? (
-                          <>
-                            <XCircle className="w-3 h-3" />
-                            Cancelada
-                          </>
-                        ) : t.status === 'Vencido' ? (
-                          <>
-                            <AlertCircle className="w-3 h-3" />
-                            Vencida
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle className="w-3 h-3" />
-                            Cobrar
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <button
-                        onClick={() => onDeleteTransaction(t.id)}
-                        className="text-slate-400 dark:text-slate-500 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
-                        title="Eliminar transacción"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <span className={`badge ${
+                        g.status === 'Pagado' ? 'badge-success' : g.status === 'Cancelado' ? 'badge-slate' : g.status === 'Vencido' ? 'badge-danger' : 'badge-warning'
+                      }`}>
+                        {g.status === 'Pagado' ? <><CheckCircle2 className="w-3 h-3" /> Pagado</> : g.status === 'Cancelado' ? <><XCircle className="w-3 h-3" /> Cancelada</> : g.status === 'Vencido' ? <><AlertCircle className="w-3 h-3" /> Vencida</> : <><AlertCircle className="w-3 h-3" /> Cobrar</>}
+                      </span>
+                      <div className="text-[9px] text-slate-400 mt-1 font-mono">
+                        {g.transactions.length} cuenta{g.transactions.length !== 1 ? 's' : ''}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -687,7 +636,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <span className="font-bold text-slate-800 dark:text-slate-200">
               {Math.min(startIndex + itemsPerPage, filteredTransactions.length)}
             </span>{' '}
-            de <span className="font-bold text-slate-850 dark:text-slate-200">{filteredTransactions.length}</span> transacciones
+            de <span className="font-bold text-slate-850 dark:text-slate-200">{filteredTransactions.length}</span> transacciones agrupadas
           </div>
           <div className="flex items-center gap-1.5 font-bold">
             <button
@@ -714,29 +663,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       {/* Client Detail & History Modal */}
       {selectedClientDetails && (() => {
         const c = selectedClientDetails;
-        const isSingle = modalViewMode === 'single';
-        const activeTx = c.transactions.find((t: any) => t.id === c.clickedTxId) || c.transactions[0];
 
-        const displayTotalDebt = isSingle ? activeTx.amount : c.stats.totalDebt;
-        const displayTotalPaid = isSingle 
-          ? (activeTx.status === 'Pagado' ? activeTx.amount : (activeTx.paidAmount || 0)) 
-          : c.stats.totalPaid;
-        const displayTotalOutstanding = isSingle 
-          ? Math.max(0, activeTx.amount - (activeTx.paidAmount || 0)) 
-          : c.stats.totalOutstanding;
-        const displayPaymentRate = isSingle 
-          ? (activeTx.amount > 0 ? (displayTotalPaid / activeTx.amount) * 100 : 0) 
-          : c.stats.paymentRate;
-
-        const displayTransactions = isSingle ? [activeTx] : c.transactions;
-
-        const allPayments: { txId: string; amount: number; date: string }[] = [];
-        const txsForPayments = isSingle ? [activeTx] : c.transactions;
-        txsForPayments.forEach((t: any) => {
+        const allPayments: { txId: string; paymentId: number; amount: number; date: string }[] = [];
+        c.transactions.forEach((t: any) => {
           if (t.payments && t.payments.length > 0) {
             t.payments.forEach((p: any) => {
               allPayments.push({
                 txId: t.id,
+                paymentId: p.id,
                 amount: p.amount,
                 date: p.date
               });
@@ -744,6 +678,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           } else if (t.paidAmount > 0) {
             allPayments.push({
               txId: t.id,
+              paymentId: 0,
               amount: t.paidAmount,
               date: t.date
             });
@@ -752,8 +687,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         allPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         const allDiscounts: { txId: string; percentage: number; amount: number; date: string }[] = [];
-        const txsForDiscounts = isSingle ? [activeTx] : c.transactions;
-        txsForDiscounts.forEach((t: any) => {
+        c.transactions.forEach((t: any) => {
           if (t.discounts && t.discounts.length > 0) {
             t.discounts.forEach((d: any) => {
               allDiscounts.push({
@@ -769,40 +703,135 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
         return (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+            <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+              {refreshingModal && (
+                <div className="absolute inset-0 z-[120] bg-white/70 dark:bg-slate-900/70 flex items-center justify-center rounded-2xl">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                    <span className="text-xs font-semibold text-slate-500">Actualizando datos...</span>
+                  </div>
+                </div>
+              )}
               
               {/* Modal Header */}
               <div className="bg-slate-50 dark:bg-slate-900/50 p-5 border-b border-slate-150 dark:border-slate-800 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                     <User className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                      Ficha del Cliente: {c.name}
-                    </h3>
-                    <div className="flex gap-3 text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium flex-wrap">
-                      {c.cedula && (
-                        <span className="flex items-center gap-1">
-                          <strong>Cédula:</strong> {c.cedula}
-                        </span>
-                      )}
-                      {c.phone && (
-                        <span className="flex items-center gap-1">
-                          <strong>Teléfono:</strong> {c.phone}
-                        </span>
-                      )}
-                      {c.location && (
-                        <span className="flex items-center gap-1 text-[#06B6D4]">
-                          <strong>Dirección:</strong> {c.location}
-                        </span>
-                      )}
+                  {editingClient ? (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const fd = new FormData(e.target as HTMLFormElement);
+                        const data = {
+                          client_name: (fd.get('client_name') as string)?.trim() || c.name,
+                          client_document: (fd.get('client_document') as string)?.trim() || '',
+                          client_phone: (fd.get('client_phone') as string)?.trim() || '',
+                        };
+                        if (!data.client_name) return;
+                        setSavingClient(true);
+                        await onUpdateClient?.(c.name, data);
+                        setSelectedClientDetails((prev: any) => {
+                          if (!prev) return prev;
+                          const updatedTxs = prev.transactions.map((tx: any) => ({
+                            ...tx,
+                            clientName: data.client_name,
+                            cedula: data.client_document || tx.cedula,
+                            phone: data.client_phone || tx.phone,
+                          }));
+                          return {
+                            ...prev,
+                            name: data.client_name,
+                            phone: data.client_phone || prev.phone,
+                            cedula: data.client_document || prev.cedula,
+                            transactions: updatedTxs,
+                          };
+                        });
+                        if (data.client_name !== c.name) {
+                          selectedClientNameRef.current = data.client_name;
+                        }
+                        setSavingClient(false);
+                        setEditingClient(false);
+                      }}
+                      className="flex flex-wrap items-center gap-2 flex-1"
+                    >
+                      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-400 shrink-0">Nombre:</span>
+                          <input
+                            name="client_name"
+                            defaultValue={c.name}
+                            className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs flex-1 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                            required
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-slate-400">Cédula:</span>
+                            <input
+                              name="client_document"
+                              defaultValue={c.cedula || ''}
+                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-slate-400">Teléfono:</span>
+                            <input
+                              name="client_phone"
+                              defaultValue={c.phone || ''}
+                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button type="submit" disabled={savingClient} className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Guardar">
+                          {savingClient ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        </button>
+                        <button type="button" disabled={savingClient} onClick={() => !savingClient && setEditingClient(false)} className="p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Cancelar">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-slate-950 dark:text-slate-100 truncate">
+                          Ficha del Cliente: {c.name}
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setEditingClient(true)}
+                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded cursor-pointer shrink-0"
+                          title="Editar datos del cliente"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                      </div>
+                      <div className="flex gap-3 text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium flex-wrap">
+                        {c.cedula && (
+                          <span className="flex items-center gap-1">
+                            <strong>Cédula:</strong> {c.cedula}
+                          </span>
+                        )}
+                        {c.phone && (
+                          <span className="flex items-center gap-1">
+                            <strong>Teléfono:</strong> {c.phone}
+                          </span>
+                        )}
+                        {c.location && (
+                          <span className="flex items-center gap-1 text-[#06B6D4]">
+                            <strong>Dirección:</strong> {c.location}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedClientDetails(null)}
+                  onClick={() => { setSelectedClientDetails(null); selectedClientNameRef.current = null; setEditingPayment(null); setEditingTxInModal(null); setEditingClient(false); }}
                   className="text-slate-450 hover:text-slate-655 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -812,48 +841,22 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               {/* Modal Body */}
               <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50 dark:bg-slate-950/20 space-y-6">
                 
-                {/* Selector de modo de vista */}
-                {c.transactions.length > 1 && (
-                  <div className="flex items-center gap-1 p-1 bg-slate-150 dark:bg-slate-800 rounded-xl w-fit border border-slate-250 dark:border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => setModalViewMode('single')}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                        modalViewMode === 'single'
-                          ? 'bg-white dark:bg-slate-700 text-indigo-650 dark:text-indigo-450 shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200'
-                      }`}
-                    >
-                      <span>Esta Cuenta (ID: #{c.clickedTxId})</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setModalViewMode('all')}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                        modalViewMode === 'all'
-                          ? 'bg-white dark:bg-slate-700 text-indigo-650 dark:text-indigo-450 shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-450 dark:hover:text-slate-200'
-                      }`}
-                    >
-                      <span>Consolidado (Todas las deudas)</span>
-                    </button>
-                  </div>
-                )}
+
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl shadow-xs">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Monto Total Facturado</span>
-                    <span className="font-mono text-base font-bold text-slate-900 dark:text-slate-150">{formatMoney(displayTotalDebt)}</span>
+                    <span className="font-mono text-base font-bold text-slate-900 dark:text-slate-150">{formatMoney(c.stats.totalDebt)}</span>
                   </div>
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl shadow-xs">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Total Abonado</span>
-                    <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400">+{formatMoney(displayTotalPaid)}</span>
+                    <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400">+{formatMoney(c.stats.totalPaid)}</span>
                   </div>
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl shadow-xs">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Saldo Restante</span>
-                    <span className={`font-mono text-base font-bold ${displayTotalOutstanding > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                      {formatMoney(displayTotalOutstanding)}
+                    <span className={`font-mono text-base font-bold ${c.stats.totalOutstanding > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {formatMoney(c.stats.totalOutstanding)}
                     </span>
                   </div>
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl shadow-xs">
@@ -862,11 +865,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden flex-1">
                         <div 
                           className="bg-indigo-650 h-full rounded-full" 
-                          style={{ width: `${displayPaymentRate}%` }}
+                          style={{ width: `${c.stats.paymentRate}%` }}
                         />
                       </div>
                       <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
-                        {displayPaymentRate.toFixed(0)}%
+                        {c.stats.paymentRate.toFixed(0)}%
                       </span>
                     </div>
                   </div>
@@ -880,7 +883,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     <div className="bg-slate-50 dark:bg-slate-800/40 p-3 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Historial de Cuentas / Deudas</span>
                       <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-semibold">
-                        {displayTransactions.length} registros
+                        {c.transactions.length} registros
                       </span>
                     </div>
                     <div className="overflow-x-auto max-h-[300px]">
@@ -888,37 +891,114 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-450 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                           <tr>
                             <th className="px-4 py-2.5">ID</th>
-                            <th className="px-4 py-2.5">Fecha</th>
+                            <th className="px-4 py-2.5">Creada</th>
+                            <th className="px-4 py-2.5">Vence</th>
                             <th className="px-4 py-2.5">Monto</th>
                             <th className="px-4 py-2.5">Abonado</th>
                             <th className="px-4 py-2.5">Estado</th>
+                            <th className="px-4 py-2.5"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                          {displayTransactions.map((t: any, idx: number) => {
+                          {c.transactions.map((t: any, idx: number) => {
                             const tPaid = t.status === 'Pagado' ? t.amount : (t.paidAmount || 0);
+                            const isEditingTx = editingTxInModal?.id === t.id;
                             return (
                               <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                                <td className="px-4 py-2.5 font-mono text-slate-400">{t.id}</td>
-                                <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">{formatDate(t.date)}</td>
-                                <td className="px-4 py-2.5 font-bold font-mono text-slate-700 dark:text-slate-350">
-                                  <div className="flex flex-col">
-                                    <span>{formatMoney(t.amount)}</span>
-                                    {t.discounts && t.discounts.length > 0 && (
-                                      <span className="text-[9px] text-purple-650 dark:text-purple-400 font-mono font-medium" title="Descuentos aplicados">
-                                        Desc: {t.discounts.map((d: any) => `${d.percentage}% (-${formatMoney(d.amount)})`).join(', ')}
+                                  {isEditingTx ? (
+                                    <td colSpan={7} className="px-4 py-3">
+                                    <form
+                                      onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        const fd = new FormData(e.target as HTMLFormElement);
+                                        const data: any = {};
+                                        fd.forEach((v, k) => { data[k] = v; });
+                                        if (!data.client_name?.trim()) return;
+                                        setSavingTx(true);
+                                        setRefreshingModal(true);
+                                        await onUpdateTransaction(t.id, {
+                                          client_name: data.client_name,
+                                          total_amount: parseFloat(data.total_amount),
+                                          client_document: data.client_document || '',
+                                          client_phone: data.client_phone || '',
+                                        });
+                                        setSelectedClientDetails((prev: any) => {
+                                          if (!prev) return prev;
+                                          const updatedTxs = prev.transactions.map((tx: any) => {
+                                            if (tx.id !== t.id) return tx;
+                                            return {
+                                              ...tx,
+                                              clientName: data.client_name,
+                                              amount: parseFloat(data.total_amount),
+                                              cedula: data.client_document || '',
+                                              phone: data.client_phone || '',
+                                            };
+                                          });
+                                          const updatedName = data.client_name;
+                                          const rep = updatedTxs.find((tx: any) => tx.phone || tx.cedula || tx.location) || updatedTxs[0];
+                                          return {
+                                            ...prev,
+                                            name: updatedName,
+                                            phone: rep.phone,
+                                            cedula: rep.cedula,
+                                            location: rep.location,
+                                            transactions: updatedTxs,
+                                          };
+                                        });
+                                        if (data.client_name?.trim().toLowerCase() !== t.clientName?.trim().toLowerCase()) {
+                                          selectedClientNameRef.current = data.client_name;
+                                        }
+                                        setSavingTx(false);
+                                        setEditingTxInModal(null);
+                                      }}
+                                      className="flex flex-wrap items-center gap-2"
+                                    >
+                                      <input name="client_name" defaultValue={t.clientName} placeholder="Nombre" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-32 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <input name="total_amount" type="number" step="0.01" defaultValue={t.amount} placeholder="Monto" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-24 font-mono bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <input name="client_document" defaultValue={t.cedula} placeholder="Cédula" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <input name="client_phone" defaultValue={t.phone} placeholder="Teléfono" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <button type="submit" disabled={savingTx} className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Guardar">
+                                        {savingTx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                      </button>
+                                      <button type="button" disabled={savingTx} onClick={() => !savingTx && setEditingTxInModal(null)} className="p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Cancelar">
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </form>
+                                  </td>
+                                ) : (
+                                  <>
+                                    <td className="px-4 py-2.5 font-mono text-slate-400">{t.id}</td>
+                                    <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400 font-mono">{formatDate(t.date)}</td>
+                                    <td className="px-4 py-2.5 text-slate-500 dark:text-slate-500 font-mono">{t.dueDate ? formatDate(t.dueDate) : <span className="text-slate-300 italic text-[10px]">-</span>}</td>
+                                    <td className="px-4 py-2.5 font-bold font-mono text-slate-700 dark:text-slate-350">
+                                      <div className="flex flex-col">
+                                        <span>{formatMoney(t.amount)}</span>
+                                        {t.discounts && t.discounts.length > 0 && (
+                                          <span className="text-[9px] text-purple-650 dark:text-purple-400 font-mono font-medium" title="Descuentos aplicados">
+                                            Desc: {t.discounts.map((d: any) => `${d.percentage}% (-${formatMoney(d.amount)})`).join(', ')}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2.5 font-mono text-emerald-600 dark:text-emerald-400">+{formatMoney(tPaid)}</td>
+                                    <td className="px-4 py-2.5">
+                                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                        t.status === 'Pagado' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-450' : t.status === 'Cancelado' ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400' : t.status === 'Vencido' ? 'bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-450' : 'bg-amber-100 text-amber-800 dark:bg-amber-955/20 dark:text-amber-450'
+                                      }`}>
+                                        {t.status === 'Pagado' ? 'Pagado' : t.status === 'Cancelado' ? 'Cancelado' : t.status === 'Vencido' ? 'Vencido' : 'Pendiente'}
                                       </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-2.5 font-mono text-emerald-600 dark:text-emerald-400">+{formatMoney(tPaid)}</td>
-                                <td className="px-4 py-2.5">
-                                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                                    t.status === 'Pagado' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-450' : t.status === 'Cancelado' ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400' : t.status === 'Vencido' ? 'bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-450' : 'bg-amber-100 text-amber-800 dark:bg-amber-955/20 dark:text-amber-450'
-                                  }`}>
-                                    {t.status === 'Pagado' ? 'Pagado' : t.status === 'Cancelado' ? 'Cancelado' : t.status === 'Vencido' ? 'Vencido' : 'Pendiente'}
-                                  </span>
-                                </td>
+                                    </td>
+                                    <td className="px-4 py-2.5">
+                                      <button
+                                        onClick={() => setEditingTxInModal(t)}
+                                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded cursor-pointer"
+                                        title="Editar cuenta"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                      </button>
+                                    </td>
+                                  </>
+                                )}
                               </tr>
                             );
                           })}
@@ -942,17 +1022,81 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         {allPayments.length === 0 ? (
                           <p className="text-center text-slate-455 text-xs py-4">No se han registrado abonos para este cliente.</p>
                         ) : (
-                          allPayments.map((p, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs py-1">
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDate(p.date)}</span>
-                                <span className="text-[10px] text-slate-400">En cuenta ID: #{p.txId}</span>
+                          allPayments.map((p, idx) => {
+                            const isEditing = editingPayment?.txId === p.txId && editingPayment?.paymentId === p.paymentId;
+                            return (
+                              <div key={idx} className="flex justify-between items-center text-xs py-1 gap-2">
+                                {isEditing ? (
+                                  <form
+                                    onSubmit={async (e) => {
+                                      e.preventDefault();
+                                      const input = (e.target as HTMLFormElement).querySelector('input')!;
+                                      const val = parseFloat(input.value);
+                                      if (!val || val <= 0) return;
+                                      setSavingPayment(true);
+                                      setRefreshingModal(true);
+                                      await onUpdatePayment(p.txId, p.paymentId, val);
+                                      setSelectedClientDetails((prev: any) => {
+                                        if (!prev) return prev;
+                                        const updatedTxs = prev.transactions.map((t: any) => {
+                                          if (t.id !== p.txId) return t;
+                                          const oldPaid = t.paidAmount || 0;
+                                          const diff = val - p.amount;
+                                          const newPaid = Math.max(0, oldPaid + diff);
+                                          const newStatus = newPaid >= t.amount ? 'Pagado' : t.status === 'Cancelado' ? 'Cancelado' : 'Por cobrar';
+                                          return { ...t, paidAmount: newPaid, status: newStatus };
+                                        });
+                                        return { ...prev, transactions: updatedTxs };
+                                      });
+                                      setSavingPayment(false);
+                                      setEditingPayment(null);
+                                    }}
+                                    className="flex items-center gap-2 w-full"
+                                  >
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      defaultValue={p.amount}
+                                      className="w-24 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs font-mono bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
+                                      autoFocus
+                                    />
+                                    <button type="submit" disabled={savingPayment} className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Guardar">
+                                      {savingPayment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <button type="button" disabled={savingPayment} onClick={() => !savingPayment && setEditingPayment(null)} className="p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Cancelar">
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </form>
+                                ) : (
+                                  <>
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                      <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDate(p.date)}</span>
+                                      <span className="text-[10px] text-slate-400">En cuenta ID: #{p.txId}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                      <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">
+                                        +{formatMoney(p.amount)}
+                                      </span>
+                                      <button
+                                        onClick={() => setEditingPayment({ txId: p.txId, paymentId: p.paymentId, amount: p.amount })}
+                                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded cursor-pointer"
+                                        title="Editar abono"
+                                      >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                      </button>
+                                      <button
+                                        onClick={() => { setRefreshingModal(true); onDeletePayment(p.txId, p.paymentId); }}
+                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded cursor-pointer"
+                                        title="Eliminar abono"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
                               </div>
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">
-                                +{formatMoney(p.amount)}
-                              </span>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -994,7 +1138,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-150 dark:border-slate-800 flex justify-end shrink-0">
                 <button
                   type="button"
-                  onClick={() => setSelectedClientDetails(null)}
+                  onClick={() => { setSelectedClientDetails(null); selectedClientNameRef.current = null; setEditingPayment(null); setEditingTxInModal(null); }}
                   className="btn btn-secondary"
                 >
                   Cerrar

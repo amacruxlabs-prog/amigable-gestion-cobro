@@ -73,6 +73,7 @@ export function useTransactions() {
         paidAmount: Number(t.paid_amount),
         status: t.status === 'PAID' ? 'Pagado' : t.status === 'CANCELLED' ? 'Cancelado' : t.status === 'OVERDUE' ? 'Vencido' : 'Por cobrar',
         date: t.created_at.substring(0, 10),
+        dueDate: t.due_date ? t.due_date.substring(0, 10) : '',
         payments: t.payments || [],
         discounts: t.discounts || [],
       }));
@@ -143,6 +144,35 @@ export function useTransactions() {
     }
   };
 
+  const handleUpdatePayment = async (txId: string, paymentId: number, amount: number) => {
+    if (!isAdmin) return;
+    try {
+      await api.put(`/tenant/transactions/${txId}/payments/${paymentId}`, { amount });
+      toast('Abono actualizado', 'success');
+      fetchTransactions(currentPage);
+    } catch (err) {
+      toast('Error actualizando abono', 'error');
+    }
+  };
+
+  const handleDeletePayment = async (txId: string, paymentId: number) => {
+    if (!isAdmin) return;
+    confirm({
+      title: 'Eliminar Abono',
+      message: '¿Seguro que deseas eliminar este abono? Esta acción no se puede deshacer.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/tenant/transactions/${txId}/payments/${paymentId}`);
+          toast('Abono eliminado', 'success');
+          fetchTransactions(currentPage);
+        } catch (err) {
+          toast('Error eliminando abono', 'error');
+        }
+      }
+    });
+  };
+
   const handleRegisterPayment = async (id: string, paymentAmount: number, paymentDate: string) => {
     if (!isAdmin) return;
     try {
@@ -178,18 +208,43 @@ export function useTransactions() {
   const handleAddTransaction = async (newTx: Omit<Transaction, 'id'>) => {
     if (!isAdmin) return;
     try {
+      const paidAmount = newTx.paidAmount || 0;
       await api.post('/tenant/transactions', {
         client_name: newTx.clientName,
         client_document: newTx.cedula || '',
         client_phone: newTx.phone || '',
         total_amount: newTx.amount,
-        status: newTx.status === 'Pagado' ? 'PAID' : 'PENDING',
-        created_at: newTx.date
+        paid_amount: paidAmount,
+        status: paidAmount >= newTx.amount ? 'PAID' : 'PENDING',
+        created_at: newTx.date,
+        due_date: newTx.dueDate || newTx.date
       });
       toast('Nueva cuenta creada', 'success');
       fetchTransactions(1);
     } catch (error) {
       toast('Error al crear transacción', 'error');
+    }
+  };
+
+  const handleEditTransaction = async (id: string, data: any) => {
+    if (!isAdmin) return;
+    try {
+      await api.put(`/tenant/transactions/${id}`, data);
+      toast('Cuenta actualizada', 'success');
+      fetchTransactions(currentPage);
+    } catch (err) {
+      toast('Error actualizando cuenta', 'error');
+    }
+  };
+
+  const handleUpdateClient = async (oldName: string, data: { client_name: string; client_document?: string; client_phone?: string }) => {
+    if (!isAdmin) return;
+    try {
+      await api.put('/tenant/clients/update', { old_name: oldName, ...data });
+      toast('Cliente actualizado exitosamente', 'success');
+      fetchTransactions(currentPage);
+    } catch (err) {
+      toast('Error actualizando cliente', 'error');
     }
   };
 
@@ -222,8 +277,12 @@ export function useTransactions() {
     handleUpdatePhone,
     handleToggleStatus,
     handleRegisterPayment,
+    handleUpdatePayment,
+    handleDeletePayment,
     handleDeleteTransaction,
+    handleEditTransaction,
     handleAddTransaction,
+    handleUpdateClient,
     handleApplyDiscount,
     currentPage,
     setCurrentPage,

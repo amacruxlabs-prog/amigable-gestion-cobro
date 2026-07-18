@@ -83,7 +83,10 @@ Route::group([
     Route::put('transactions/{id}', [TransactionController::class, 'update']);
     Route::delete('transactions/{id}', [TransactionController::class, 'destroy']);
     Route::post('transactions/{id}/payment', [TransactionController::class, 'addPayment']);
+    Route::put('transactions/{txId}/payments/{paymentId}', [TransactionController::class, 'updatePayment']);
+    Route::delete('transactions/{txId}/payments/{paymentId}', [TransactionController::class, 'destroyPayment']);
     Route::post('transactions/apply-discount', [TransactionController::class, 'applyDiscount']);
+    Route::put('clients/update', [TransactionController::class, 'updateClient']);
     Route::get('activity-logs', [TenantActivityLogController::class, 'index']);
 });
 

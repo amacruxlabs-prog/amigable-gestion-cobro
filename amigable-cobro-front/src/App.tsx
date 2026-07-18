@@ -22,6 +22,7 @@ import {
   DollarSign,
   Settings,
   Link2,
+  Loader2,
 } from 'lucide-react';
 
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -31,6 +32,7 @@ export default function App() {
   const { user, loading: authLoading, isSuperadmin, isAdmin, isVisor, updateToken } = useAuth();
   const {
     transactions,
+    dbLoading,
     availableHeaders,
     currentMapping,
     sourceName,
@@ -42,8 +44,12 @@ export default function App() {
     handleUpdatePhone,
     handleToggleStatus,
     handleRegisterPayment,
+    handleUpdatePayment,
+    handleDeletePayment,
+    handleEditTransaction,
     handleDeleteTransaction,
     handleAddTransaction,
+    handleUpdateClient,
     handleApplyDiscount,
     currentPage,
     setCurrentPage,
@@ -79,7 +85,10 @@ export default function App() {
         className="min-h-screen flex items-center justify-center"
         style={{ background: 'var(--surface-base)', color: 'var(--text-muted)' }}
       >
-        Cargando identidad segura...
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          <span className="text-sm font-semibold text-slate-500">Cargando identidad segura...</span>
+        </div>
       </div>
     );
     
@@ -361,10 +370,15 @@ export default function App() {
 
                 <TransactionTable
                   transactions={transactions}
+                  loading={dbLoading}
                   onToggleStatus={handleToggleStatus}
                   onRegisterPayment={handleRegisterPayment}
+                  onUpdatePayment={handleUpdatePayment}
+                  onDeletePayment={handleDeletePayment}
+                  onUpdateTransaction={handleEditTransaction}
                   onDeleteTransaction={handleDeleteTransaction}
                   onAddTransaction={handleAddTransaction}
+                  onUpdateClient={handleUpdateClient}
                   filter={filters}
                   onFilterChange={setFilters}
                   isSuperadmin={isSuperadmin}

@@ -51,7 +51,7 @@ services:
     depends_on:
       - app
     ports:
-      - "3003:3003"
+      - "3004:3003"
     environment:
       - PORT=3003
       - BACKEND_URL=http://app:8000

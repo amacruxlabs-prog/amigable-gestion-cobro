@@ -3,12 +3,13 @@ export interface Transaction {
   clientName: string;
   amount: number;
   status: 'Pagado' | 'Cobrar'; // 'Pagado' (paid) or 'Cobrar' (receivable)
-  date: string; // ISO YYYY-MM-DD format
+  date: string; // ISO YYYY-MM-DD format (created_at)
   phone?: string; // Phone number for AI notifications
   location?: string; // Client's physical location/address
   cedula?: string;
   paidAmount?: number; // Cumulative partial payments registered so far
-  payments?: { amount: number; date: string }[]; // Historical payments registry
+  dueDate?: string; // ISO YYYY-MM-DD format
+  payments?: { id: number; amount: number; date: string }[]; // Historical payments registry
   discounts?: { percentage: number; amount: number; date: string }[]; // Historical discounts registry
   originalData?: Record<string, string>; // Keeps original spreadsheet row values for full fidelity
 }

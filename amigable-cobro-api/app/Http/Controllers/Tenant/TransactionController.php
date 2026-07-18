@@ -75,6 +75,7 @@ class TransactionController extends Controller
         foreach ($transactions->items() as $tx) {
             $tx->payments = $paymentsGrouped->get($tx->id, collect())->map(function($p) {
                 return [
+                    'id' => (int)$p->id,
                     'amount' => (float)$p->amount,
                     'date' => substr($p->created_at, 0, 10)
                 ];
@@ -107,25 +108,39 @@ class TransactionController extends Controller
     {
         $businessId = $this->getBusinessId();
         
+        $paidAmount = $request->paid_amount ?? 0;
+        $status = $paidAmount >= $request->total_amount ? 'PAID' : ($request->status === 'PAID' ? 'PAID' : 'PENDING');
+
         $transactionId = DB::table('transactions')->insertGetId([
             'business_id' => $businessId,
             'client_name' => $request->client_name,
             'client_document' => $request->client_document,
             'client_phone' => $request->client_phone,
             'total_amount' => $request->total_amount,
-            'paid_amount' => $request->status === 'PAID' ? $request->total_amount : 0,
-            'status' => $request->status,
+            'paid_amount' => $paidAmount,
+            'status' => $status,
             'created_at' => $request->created_at ? $request->created_at : now(),
+            'due_date' => $request->due_date ?? $request->created_at ?? now(),
             'updated_at' => now(),
         ]);
 
+        if ($paidAmount > 0) {
+            DB::table('payments')->insert([
+                'transaction_id' => $transactionId,
+                'amount' => $paidAmount,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
         Cache::forget("business_{$businessId}_dashboard");
 
-        ActivityLogger::log('created', "Creó la cuenta de {$request->client_name} por $" . number_format($request->total_amount, 2), 'transaction', (string)$transactionId, null, [
+        ActivityLogger::log('created', "Creó la cuenta de {$request->client_name} por $" . number_format($request->total_amount, 2) . ($paidAmount > 0 ? " con abono inicial de $" . number_format($paidAmount, 2) : ""), 'transaction', (string)$transactionId, null, [
             'client_name' => $request->client_name,
             'client_document' => $request->client_document,
             'total_amount' => $request->total_amount,
-            'status' => $request->status,
+            'paid_amount' => $paidAmount,
+            'status' => $status,
         ]);
 
         return $this->successResponse(['id' => $transactionId], 'Transacción creada', 201);
@@ -227,6 +242,93 @@ class TransactionController extends Controller
         return $this->successResponse(['paid_amount' => $newPaidAmount, 'status' => $status], 'Abono registrado');
     }
 
+    public function updatePayment(Request $request, $txId, $paymentId)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $businessId = $this->getBusinessId();
+        $transaction = DB::table('transactions')->where('id', $txId)->where('business_id', $businessId)->first();
+        if (!$transaction) {
+            return $this->errorResponse('Transacción no encontrada.', 'NOT_FOUND', null, 404);
+        }
+
+        $payment = DB::table('payments')->where('id', $paymentId)->where('transaction_id', $txId)->first();
+        if (!$payment) {
+            return $this->errorResponse('Abono no encontrado.', 'NOT_FOUND', null, 404);
+        }
+
+        $oldAmount = $payment->amount;
+
+        DB::table('payments')->where('id', $paymentId)->update([
+            'amount' => $request->amount,
+            'updated_at' => now(),
+        ]);
+
+        $newPaidAmount = ($transaction->paid_amount - $oldAmount) + $request->amount;
+        $newPaidAmount = max(0, $newPaidAmount);
+        $status = $newPaidAmount >= $transaction->total_amount ? 'PAID' : ($newPaidAmount > 0 ? 'PENDING' : $transaction->status);
+
+        DB::table('transactions')->where('id', $txId)->update([
+            'paid_amount' => $newPaidAmount,
+            'status' => $status,
+            'updated_at' => now(),
+        ]);
+
+        Cache::forget("business_{$businessId}_dashboard");
+
+        ActivityLogger::log('updated', "Editó abono de $" . number_format($request->amount, 2) . " en cuenta de {$transaction->client_name} (anterior: $" . number_format($oldAmount, 2) . ")", 'payment', (string)$paymentId, [
+            'amount' => (float)$oldAmount,
+        ], [
+            'amount' => (float)$request->amount,
+        ]);
+
+        return $this->successResponse([
+            'paid_amount' => (float)$newPaidAmount,
+            'status' => $status,
+        ], 'Abono actualizado');
+    }
+
+    public function destroyPayment($txId, $paymentId)
+    {
+        $businessId = $this->getBusinessId();
+        $transaction = DB::table('transactions')->where('id', $txId)->where('business_id', $businessId)->first();
+        if (!$transaction) {
+            return $this->errorResponse('Transacción no encontrada.', 'NOT_FOUND', null, 404);
+        }
+
+        $payment = DB::table('payments')->where('id', $paymentId)->where('transaction_id', $txId)->first();
+        if (!$payment) {
+            return $this->errorResponse('Abono no encontrado.', 'NOT_FOUND', null, 404);
+        }
+
+        $newPaidAmount = max(0, $transaction->paid_amount - $payment->amount);
+        $allPayments = DB::table('payments')->where('transaction_id', $txId)->sum('amount');
+        $remainingPayments = $allPayments - $payment->amount;
+        $newPaidAmount = max(0, $remainingPayments);
+        $status = $newPaidAmount >= $transaction->total_amount ? 'PAID' : ($newPaidAmount > 0 ? 'PENDING' : 'PENDING');
+
+        DB::table('payments')->where('id', $paymentId)->delete();
+
+        DB::table('transactions')->where('id', $txId)->update([
+            'paid_amount' => $newPaidAmount,
+            'status' => $status,
+            'updated_at' => now(),
+        ]);
+
+        Cache::forget("business_{$businessId}_dashboard");
+
+        ActivityLogger::log('deleted', "Eliminó abono de $" . number_format($payment->amount, 2) . " de la cuenta de {$transaction->client_name}", 'payment', (string)$paymentId, [
+            'amount' => (float)$payment->amount,
+        ]);
+
+        return $this->successResponse([
+            'paid_amount' => (float)$newPaidAmount,
+            'status' => $status,
+        ], 'Abono eliminado');
+    }
+
     public function calendar(Request $request)
     {
         $businessId = $this->getBusinessId();
@@ -250,6 +352,58 @@ class TransactionController extends Controller
         return $this->successResponse([
             'transactions' => $transactions
         ], 'Datos del calendario');
+    }
+
+    public function updateClient(Request $request)
+    {
+        $request->validate([
+            'old_name' => 'required|string|max:255',
+            'client_name' => 'required|string|max:255',
+            'client_document' => 'nullable|string|max:255',
+            'client_phone' => 'nullable|string|max:255',
+        ]);
+
+        $businessId = $this->getBusinessId();
+        if (!$businessId) {
+            return $this->errorResponse('Usuario no tiene un negocio asignado.', 'NO_BUSINESS', null, 403);
+        }
+
+        $oldName = $request->old_name;
+
+        $updateData = [
+            'client_name' => $request->client_name,
+            'updated_at' => now(),
+        ];
+
+        if ($request->has('client_document')) {
+            $updateData['client_document'] = $request->client_document;
+        }
+
+        if ($request->has('client_phone')) {
+            $updateData['client_phone'] = $request->client_phone;
+        }
+
+        $updated = DB::table('transactions')
+            ->where('business_id', $businessId)
+            ->where('client_name', $oldName)
+            ->update($updateData);
+
+        Cache::forget("business_{$businessId}_dashboard");
+
+        ActivityLogger::log('updated', "Actualizó datos del cliente {$oldName} → {$request->client_name} ({$updated} cuenta(s) afectada(s))", 'transaction', null, [
+            'old_name' => $oldName,
+            'client_document_old' => null,
+            'client_phone_old' => null,
+        ], [
+            'client_name' => $request->client_name,
+            'client_document' => $request->client_document,
+            'client_phone' => $request->client_phone,
+            'updated_count' => $updated,
+        ]);
+
+        return $this->successResponse([
+            'updated_count' => $updated,
+        ], "Cliente actualizado. {$updated} cuenta(s) afectada(s).");
     }
 
     public function applyDiscount(Request $request)

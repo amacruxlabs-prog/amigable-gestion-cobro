@@ -183,13 +183,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 <span className="hidden sm:inline">Asistente IA</span>
               </button>
 
-              {/* WhatsApp */}
-              {isAdmin && (
-                <button onClick={onOpenWhatsapp} className="btn btn-success" title="Difusión WhatsApp">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">WhatsApp</span>
-                </button>
-              )}
+              {/* WhatsApp eliminado temporalmente */}
 
               {/* Theme toggle */}
               <button

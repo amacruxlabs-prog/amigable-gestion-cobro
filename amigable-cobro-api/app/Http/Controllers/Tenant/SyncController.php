@@ -34,6 +34,7 @@ class SyncController extends Controller
                     'paid_amount' => $tx['paid_amount'] ?? 0,
                     'status' => $tx['status'] === 'PAID' ? 'PAID' : 'PENDING',
                     'created_at' => $tx['date'] ?? now(),
+                    'due_date' => $tx['due_date'] ?? $tx['date'] ?? now(),
                     'updated_at' => now(),
                 ]);
                 $imported++;

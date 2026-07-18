@@ -37,6 +37,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->getKey();
     }
 
+    public function business()
+    {
+        return $this->belongsTo(Business::class);
+    }
+
     public function getJWTCustomClaims()
     {
         return [

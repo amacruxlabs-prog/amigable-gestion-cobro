@@ -4,6 +4,7 @@ import { formatCurrency, formatDate, getVenezuelaTodayStr } from '../utils/forma
 import { Search, ChevronLeft, ChevronRight, Filter, Calendar, DollarSign, PlusCircle, Trash2, CheckCircle2, AlertCircle, XCircle, Phone, Plus, Check, X, History, MapPin, User, UserPlus, Users, Loader2 } from 'lucide-react';
 import { useTransactionTable } from '../hooks/useTransactionTable';
 import { AddTransactionModal } from './AddTransactionModal';
+import { useUI } from '../contexts/UIContext';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -113,6 +114,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     totalPages,
     onPageChange
   });
+
+  const { confirm } = useUI();
 
   const [selectedClientDetails, setSelectedClientDetails] = React.useState<any | null>(null);
   const [modalViewMode, setModalViewMode] = React.useState<'single' | 'all'>('all');
@@ -890,7 +893,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       <table className="w-full text-left text-xs whitespace-nowrap">
                         <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-450 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                           <tr>
-                            <th className="px-4 py-2.5">ID</th>
+                            <th className="px-4 py-2.5">#</th>
                             <th className="px-4 py-2.5">Creada</th>
                             <th className="px-4 py-2.5">Vence</th>
                             <th className="px-4 py-2.5">Monto</th>
@@ -967,7 +970,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                   </td>
                                 ) : (
                                   <>
-                                    <td className="px-4 py-2.5 font-mono text-slate-400">{t.id}</td>
+                                    <td className="px-4 py-2.5 font-mono text-slate-400">{idx + 1}</td>
                                     <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400 font-mono">{formatDate(t.date)}</td>
                                     <td className="px-4 py-2.5 text-slate-500 dark:text-slate-500 font-mono">{t.dueDate ? formatDate(t.dueDate) : <span className="text-slate-300 italic text-[10px]">-</span>}</td>
                                     <td className="px-4 py-2.5 font-bold font-mono text-slate-700 dark:text-slate-350">
@@ -995,6 +998,25 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                         title="Editar cuenta"
                                       >
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          confirm({
+                                            title: 'Eliminar cuenta',
+                                            message: `¿Estás seguro de eliminar la cuenta #${t.id} de ${t.clientName} por ${formatMoney(t.amount)}? Esta acción no se puede deshacer.`,
+                                            confirmText: 'Eliminar',
+                                            cancelText: 'Cancelar',
+                                            type: 'danger',
+                                            onConfirm: () => {
+                                              setRefreshingModal(true);
+                                              onDeleteTransaction(t.id);
+                                            }
+                                          });
+                                        }}
+                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded cursor-pointer"
+                                        title="Eliminar cuenta"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
                                       </button>
                                     </td>
                                   </>

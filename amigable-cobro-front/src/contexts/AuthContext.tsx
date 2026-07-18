@@ -8,6 +8,7 @@ export interface User {
   name: string;
   email: string;
   business_id?: number | null;
+  business?: { id: number; name: string } | null;
   roles?: { name: string }[];
 }
 

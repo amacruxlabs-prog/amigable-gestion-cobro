@@ -136,6 +136,11 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    const businessName = user?.business?.name;
+    document.title = businessName ? `Amigable - ${businessName}` : 'Amigable Cobro';
+  }, [user?.business?.name]);
+
   return (
     <Routes>
       <Route path="/login" element={<Navigate to="/panel/dashboard" replace />} />
@@ -165,13 +170,24 @@ export default function App() {
           <div className="h-full relative">
             {/* --- IMPERSONATION BANNER --- */}
             {isImpersonating && (
-              <div className="w-full bg-orange-500 text-white px-4 py-2 flex items-center justify-center gap-3 shadow-md z-40 relative">
-                <span className="font-bold text-sm">Estás explorando la plataforma en nombre de un negocio (Impersonación)</span>
+              <div className="w-full bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 text-white px-4 py-3 flex items-center justify-center gap-4 shadow-lg z-40 relative border-b-2 border-orange-400">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-base font-bold shadow-inner" title="Impersonación activa">⚠</span>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-orange-100">Impersonación activa</span>
+                    <span className="font-bold text-sm">
+                      <span className="text-orange-50 font-normal">Negocio: </span>
+                      <span className="bg-white/15 px-2 py-0.5 rounded font-black tracking-wide underline decoration-wavy underline-offset-2">
+                        {user?.business?.name || `ID #${user?.business_id}`}
+                      </span>
+                    </span>
+                  </div>
+                </div>
                 <button 
                   onClick={handleExitImpersonation}
-                  className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-xs font-bold transition-colors border border-white/40"
+                  className="bg-white/20 hover:bg-white/30 active:bg-white/40 px-4 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/40 hover:border-white/60 shadow-sm hover:shadow-md cursor-pointer"
                 >
-                  Finalizar Sesión como Negocio
+                  Salir del negocio
                 </button>
               </div>
             )}

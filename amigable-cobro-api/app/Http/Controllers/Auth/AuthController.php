@@ -44,7 +44,7 @@ class AuthController extends Controller
      */
     public function me()
     {
-        return $this->successResponse(auth('api')->user()->load('roles'));
+        return $this->successResponse(auth('api')->user()->load(['roles', 'business:id,name']));
     }
 
     /**
@@ -94,7 +94,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
-            'user' => auth('api')->user()->load('roles')
+            'user' => auth('api')->user()->load(['roles', 'business:id,name'])
         ], 'Autenticación exitosa.');
     }
 }

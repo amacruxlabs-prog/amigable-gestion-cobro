@@ -142,6 +142,8 @@ class BusinessController extends Controller
             'new_business_id' => $request->business_id,
         ]);
 
+        $user->load('business:id,name');
+
         return $this->successResponse([
             'token' => $token,
             'user' => $user

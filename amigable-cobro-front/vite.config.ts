@@ -6,6 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
+    build: {
+      sourcemap: true,
+    },
     plugins: [
       react(), 
       tailwindcss(),

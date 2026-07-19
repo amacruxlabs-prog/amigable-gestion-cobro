@@ -78,6 +78,11 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const businessName = user?.business?.name;
+    document.title = businessName ? `Amigable - ${businessName}` : 'Amigable Cobro';
+  }, [user?.business?.name]);
+
   // ── Auth guards ──
   if (authLoading)
     return (
@@ -135,11 +140,6 @@ export default function App() {
       console.error("Error exiting impersonation", error);
     }
   };
-
-  useEffect(() => {
-    const businessName = user?.business?.name;
-    document.title = businessName ? `Amigable - ${businessName}` : 'Amigable Cobro';
-  }, [user?.business?.name]);
 
   return (
     <Routes>

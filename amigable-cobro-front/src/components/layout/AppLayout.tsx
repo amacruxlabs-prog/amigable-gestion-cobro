@@ -177,11 +177,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 </button>
               )}
 
-              {/* Asistente IA */}
-              <button onClick={onOpenAi} className="btn btn-primary" title="Asistente IA">
-                <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                <span className="hidden sm:inline">Asistente IA</span>
-              </button>
+              {/* Asistente IA - ocultado temporalmente */}
 
               {/* WhatsApp eliminado temporalmente */}
 

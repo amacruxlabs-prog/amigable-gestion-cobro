@@ -58,6 +58,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userRoleName = userData.roles && userData.roles.length > 0 ? userData.roles[0].name : null;
       setRole(userRoleName as Role);
       setBusinessId(userData.business_id || null);
+
+      if (userData.business_suspended) {
+        window.dispatchEvent(new CustomEvent('auth-session-expired'));
+        return;
+      }
     } catch (error) {
       setUser(null);
       setRole(null);

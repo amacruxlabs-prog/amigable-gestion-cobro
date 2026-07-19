@@ -144,23 +144,7 @@ export const LoginScreen = () => {
             </button>
           </form>
           
-          <div className="mt-8 pt-6 border-t" style={{ borderColor: 'var(--border-color)' }}>
-            <p className="text-xs text-center mb-3 font-semibold" style={{ color: 'var(--text-muted)' }}>Cuenta Demo Rápida (Para Pruebas):</p>
-            <div className="grid grid-cols-1">
-              <button 
-                onClick={() => {
-                  formik.setFieldValue('email', 'admin@amigablecobro.com');
-                  formik.setFieldValue('password', 'password123');
-                }}
-                type="button"
-                className="py-2.5 px-4 text-sm font-bold rounded-lg shadow-md transition-all hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 mx-auto"
-                style={{ color: '#ffffff', background: 'linear-gradient(135deg, #4f46e5, #4338ca)' }}
-              >
-                <ShieldCheck className="w-4 h-4" />
-                Rellenar credenciales de Súper Admin
-              </button>
-            </div>
-          </div>
+
 
         </div>
         

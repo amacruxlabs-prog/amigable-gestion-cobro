@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -23,6 +24,13 @@ class AuthController extends Controller
         }
 
         $user = \App\Models\User::where('email', $credentials['email'])->first();
+
+        if ($user->business_id) {
+            $businessStatus = DB::table('businesses')->where('id', $user->business_id)->value('status');
+            if ($businessStatus === 'suspended') {
+                return $this->errorResponse('Este negocio ha sido suspendido. No puedes iniciar sesión.', 'BUSINESS_SUSPENDED', null, 403);
+            }
+        }
         
         $isAdmin = $user->roles->contains(function ($role) {
             return str_contains(strtolower($role->name), 'admin');
@@ -44,7 +52,14 @@ class AuthController extends Controller
      */
     public function me()
     {
-        return $this->successResponse(auth('api')->user()->load(['roles', 'business:id,name']));
+        $user = auth('api')->user();
+        $data = $user->load(['roles', 'business:id,name,status'])->toArray();
+
+        $data['business_suspended'] = $user->business_id
+            ? DB::table('businesses')->where('id', $user->business_id)->value('status') === 'suspended'
+            : false;
+
+        return $this->successResponse($data);
     }
 
     /**

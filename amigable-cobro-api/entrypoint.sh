@@ -11,4 +11,8 @@ if ! grep -q '^APP_KEY=[^ ]' .env 2>/dev/null; then
     php artisan key:generate --force
 fi
 
+echo "Ejecutando migraciones y seeders de base de datos..."
+php artisan migrate --force || true
+php artisan db:seed --force || true
+
 exec "$@"

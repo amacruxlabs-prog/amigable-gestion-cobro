@@ -756,6 +756,122 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         }
                         setSavingClient(false);
                         setEditingClient(false);
+          </div>
+          <div className="flex items-center gap-1.5 font-bold">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-1 px-2.5 rounded-lg border border-slate-200 hover:bg-white disabled:pointer-events-none disabled:opacity-45 bg-white cursor-pointer flex items-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700"
+            >
+              <ChevronLeft className="w-4 h-4 text-slate-655 dark:text-slate-300" />
+            </button>
+            <span className="bg-white px-3 py-1 rounded-lg border border-slate-200 font-mono text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-350">
+              {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-1 px-2.5 rounded-lg border border-slate-200 hover:bg-white disabled:pointer-events-none disabled:opacity-45 bg-white cursor-pointer flex items-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700"
+            >
+              <ChevronRight className="w-4 h-4 text-slate-655 dark:text-slate-300" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Client Detail & History Modal */}
+      {selectedClientDetails && (() => {
+        const c = selectedClientDetails;
+
+        const allPayments: { txId: string; paymentId: number; amount: number; date: string }[] = [];
+        c.transactions.forEach((t: any) => {
+          if (t.payments && t.payments.length > 0) {
+            t.payments.forEach((p: any) => {
+              allPayments.push({
+                txId: t.id,
+                paymentId: p.id,
+                amount: p.amount,
+                date: p.date
+              });
+            });
+          } else if (t.paidAmount > 0) {
+            allPayments.push({
+              txId: t.id,
+              paymentId: 0,
+              amount: t.paidAmount,
+              date: t.date
+            });
+          }
+        });
+        allPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        const allDiscounts: { txId: string; percentage: number; amount: number; date: string }[] = [];
+        c.transactions.forEach((t: any) => {
+          if (t.discounts && t.discounts.length > 0) {
+            t.discounts.forEach((d: any) => {
+              allDiscounts.push({
+                txId: t.id,
+                percentage: d.percentage,
+                amount: d.amount,
+                date: d.date
+              });
+            });
+          }
+        });
+        allDiscounts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+            <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+              {refreshingModal && (
+                <div className="absolute inset-0 z-[120] bg-white/70 dark:bg-slate-900/70 flex items-center justify-center rounded-2xl">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                    <span className="text-xs font-semibold text-slate-500">Actualizando datos...</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Modal Header */}
+              <div className="bg-slate-50 dark:bg-slate-900/50 p-5 border-b border-slate-150 dark:border-slate-800 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5" />
+                  </div>
+                  {editingClient ? (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const fd = new FormData(e.target as HTMLFormElement);
+                        const data = {
+                          client_name: (fd.get('client_name') as string)?.trim() || c.name,
+                          client_document: (fd.get('client_document') as string)?.trim() || '',
+                          client_phone: (fd.get('client_phone') as string)?.trim() || '',
+                        };
+                        if (!data.client_name) return;
+                        setSavingClient(true);
+                        await onUpdateClient?.(c.name, data);
+                        setSelectedClientDetails((prev: any) => {
+                          if (!prev) return prev;
+                          const updatedTxs = prev.transactions.map((tx: any) => ({
+                            ...tx,
+                            clientName: data.client_name,
+                            cedula: data.client_document || tx.cedula,
+                            phone: data.client_phone || tx.phone,
+                          }));
+                          return {
+                            ...prev,
+                            name: data.client_name,
+                            phone: data.client_phone || prev.phone,
+                            cedula: data.client_document || prev.cedula,
+                            transactions: updatedTxs,
+                          };
+                        });
+                        if (data.client_name !== c.name) {
+                          selectedClientNameRef.current = data.client_name;
+                        }
+                        setSavingClient(false);
+                        setEditingClient(false);
                       }}
                       className="flex flex-wrap items-center gap-2 flex-1"
                     >
@@ -765,7 +881,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                           <input
                             name="client_name"
                             defaultValue={c.name}
-                            className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs flex-1 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                            disabled={savingClient}
+                            className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs flex-1 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-bold disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-not-allowed"
                             required
                           />
                         </div>
@@ -775,7 +892,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             <input
                               name="client_document"
                               defaultValue={c.cedula || ''}
-                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                              disabled={savingClient}
+                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-not-allowed"
                             />
                           </div>
                           <div className="flex items-center gap-1">
@@ -783,7 +901,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             <input
                               name="client_phone"
                               defaultValue={c.phone || ''}
-                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                              disabled={savingClient}
+                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-not-allowed"
                             />
                           </div>
                         </div>
@@ -910,61 +1029,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                               <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                                   {isEditingTx ? (
                                     <td colSpan={7} className="px-4 py-3">
-                                    <form
-                                      onSubmit={async (e) => {
-                                        e.preventDefault();
-                                        const fd = new FormData(e.target as HTMLFormElement);
-                                        const data: any = {};
-                                        fd.forEach((v, k) => { data[k] = v; });
-                                        if (!data.client_name?.trim()) return;
-                                        setSavingTx(true);
-                                        setRefreshingModal(true);
-                                        await onUpdateTransaction(t.id, {
-                                          client_name: data.client_name,
-                                          total_amount: parseFloat(data.total_amount),
-                                          client_document: data.client_document || '',
-                                          client_phone: data.client_phone || '',
-                                        });
-                                        setSelectedClientDetails((prev: any) => {
-                                          if (!prev) return prev;
-                                          const updatedTxs = prev.transactions.map((tx: any) => {
-                                            if (tx.id !== t.id) return tx;
-                                            return {
-                                              ...tx,
-                                              clientName: data.client_name,
-                                              amount: parseFloat(data.total_amount),
-                                              cedula: data.client_document || '',
-                                              phone: data.client_phone || '',
-                                            };
-                                          });
-                                          const updatedName = data.client_name;
-                                          const rep = updatedTxs.find((tx: any) => tx.phone || tx.cedula || tx.location) || updatedTxs[0];
-                                          return {
-                                            ...prev,
-                                            name: updatedName,
-                                            phone: rep.phone,
-                                            cedula: rep.cedula,
-                                            location: rep.location,
-                                            transactions: updatedTxs,
-                                          };
-                                        });
-                                        if (data.client_name?.trim().toLowerCase() !== t.clientName?.trim().toLowerCase()) {
-                                          selectedClientNameRef.current = data.client_name;
-                                        }
-                                        setSavingTx(false);
-                                        setEditingTxInModal(null);
-                                      }}
-                                      className="flex flex-wrap items-center gap-2"
-                                    >
-                                      <input name="client_name" defaultValue={t.clientName} placeholder="Nombre" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-32 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
-                                      <input name="total_amount" type="number" step="0.01" defaultValue={t.amount} placeholder="Monto" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-24 font-mono bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
-                                      <input name="client_document" defaultValue={t.cedula} placeholder="Cédula" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
-                                      <input name="client_phone" defaultValue={t.phone} placeholder="Teléfono" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
-                                      <button type="submit" disabled={savingTx} className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Guardar">
-                                        {savingTx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                                      </button>
-                                      <button type="button" disabled={savingTx} onClick={() => !savingTx && setEditingTxInModal(null)} className="p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Cancelar">
-                                        <X className="w-3.5 h-3.5" />
                                       </button>
                                     </form>
                                   </td>

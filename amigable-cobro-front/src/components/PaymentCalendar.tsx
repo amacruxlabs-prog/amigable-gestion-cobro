@@ -29,6 +29,7 @@ import {
 import { useUI } from '../contexts/UIContext';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, getVenezuelaTodayStr } from '../utils/format';
+import { api } from '../lib/axios';
 
 interface PaymentCalendarProps {
   transactions: Transaction[];
@@ -74,7 +75,28 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [isRegisterPaymentOpen, setIsRegisterPaymentOpen] = useState(false);
-  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
+  // Drag and Drop state
+  const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null);
+
+  const handleDropOnDay = async (evt: CalendarEvent, targetDateStr: string) => {
+    if (evt.date === targetDateStr) return;
+
+    const updatedEvents = events.map(e => e.id === evt.id ? { ...e, date: targetDateStr } : e);
+    saveEvents(updatedEvents);
+
+    if (evt.transactionId) {
+      try {
+        await api.put(`/tenant/transactions/${evt.transactionId}`, { due_date: targetDateStr });
+        toast(`Fecha de vencimiento de ${evt.clientName} movida al ${targetDateStr}`, 'success');
+      } catch (err) {
+        toast('Error al actualizar fecha de vencimiento en servidor', 'error');
+      }
+    } else {
+      toast(`Evento movido al ${targetDateStr}`, 'success');
+    }
+
+    setDraggedEvent(null);
+  };
 
   // Form states
   const [newEvent, setNewEvent] = useState<{
@@ -167,18 +189,18 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
     return Array.from(clientsMap.entries()).map(([name, phone]) => ({ name, phone }));
   }, [transactions]);
 
-  // Seed generator
+  // Seed generator (Solo genera el evento ÚNICO de vencimiento por transacción)
   const generateSeedEvents = (txs: Transaction[]): CalendarEvent[] => {
     const seeded: CalendarEvent[] = [];
     txs.forEach(tx => {
       const isTxPaid = tx.status === 'Pagado';
-      const outstanding = tx.amount - (Number(tx.paidAmount) || 0);
+      const dueDateStr = tx.dueDate || tx.date;
       
-      // 1. Vencimiento Event (Cuotas/Cobros Programados)
+      // Único Evento: Vencimiento de la cuenta / cuota
       seeded.push({
         id: `venc-${tx.id}`,
         type: 'vencimiento',
-        date: tx.date,
+        date: dueDateStr,
         clientName: tx.clientName,
         phone: tx.phone,
         transactionId: tx.id,
@@ -187,59 +209,6 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
         notes: `Vencimiento de cobro por valor de $${tx.amount.toLocaleString('es-CO')}`,
         time: '08:00'
       });
-
-      if (!isTxPaid) {
-        const baseDate = new Date(tx.date + 'T12:00:00Z');
-        
-        // 2. WhatsApp Event (1 day before due date)
-        const waDate = new Date(baseDate);
-        waDate.setDate(waDate.getDate() - 1);
-        seeded.push({
-          id: `wa-${tx.id}`,
-          type: 'whatsapp',
-          date: waDate.toISOString().substring(0, 10),
-          clientName: tx.clientName,
-          phone: tx.phone,
-          transactionId: tx.id,
-          amount: outstanding,
-          status: 'pending',
-          notes: 'Recordatorio automático de WhatsApp previo al vencimiento',
-          time: '09:00'
-        });
-
-        // 3. Seguimiento/Llamada Event (2 days before due date)
-        const callDate = new Date(baseDate);
-        callDate.setDate(callDate.getDate() - 2);
-        seeded.push({
-          id: `call-${tx.id}`,
-          type: 'llamada',
-          date: callDate.toISOString().substring(0, 10),
-          clientName: tx.clientName,
-          phone: tx.phone,
-          transactionId: tx.id,
-          status: 'pending',
-          notes: 'Llamar al cliente para verificar estado de pago e intenciones',
-          time: '10:00'
-        });
-
-        // 4. Promesa de Pago Event (3 days after due date)
-        const promiseDate = new Date(baseDate);
-        promiseDate.setDate(promiseDate.getDate() + 3);
-        const todayStr = getVenezuelaTodayStr();
-        const promiseDateStr = promiseDate.toISOString().substring(0, 10);
-        seeded.push({
-          id: `promise-${tx.id}`,
-          type: 'promesa',
-          date: promiseDateStr,
-          clientName: tx.clientName,
-          phone: tx.phone,
-          transactionId: tx.id,
-          amount: outstanding,
-          status: promiseDateStr < todayStr ? 'failed' : 'pending',
-          notes: 'Compromiso de pago acordado con el gestor',
-          time: '14:30'
-        });
-      }
     });
     return seeded;
   };
@@ -309,22 +278,18 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
   // Advanced Filtered Events
   const filteredEvents = useMemo(() => {
     return events.filter(e => {
-      // 1. Text Search Filter
+      // 1. Unico tipo: Vencimiento
+      if (e.type !== 'vencimiento') return false;
+      // 2. Text Search Filter
       if (searchQuery && !e.clientName.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
-      // 2. Event Type Filter
-      if (e.type === 'vencimiento' && !showVencimientos) return false;
-      if (e.type === 'promesa' && !showPromesas) return false;
-      if (e.type === 'llamada' && !showLlamadas) return false;
-      if (e.type === 'whatsapp' && !showWhatsapps) return false;
-      
       // 3. Completed Status Filter
       if (!showCompleted && e.status === 'completed') return false;
 
       return true;
     });
-  }, [events, searchQuery, showVencimientos, showPromesas, showLlamadas, showWhatsapps, showCompleted]);
+  }, [events, searchQuery, showCompleted]);
 
   // Compute monthly statistics based on all events in active month
   const monthlyStats = useMemo(() => {
@@ -847,6 +812,17 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                     <div
                       key={`day-${dayNum}`}
                       onClick={() => setSelectedDateStr(dateStr)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (draggedEvent) {
+                          handleDropOnDay(draggedEvent, dateStr);
+                        }
+                      }}
                       className={`min-h-[110px] md:min-h-[135px] flex flex-col items-stretch justify-start p-1 border rounded-xl relative transition-all overflow-hidden cursor-pointer ${
                         isSelected 
                           ? 'border-indigo-650 bg-indigo-50/20 ring-1 ring-indigo-600 dark:bg-indigo-950/10' 
@@ -876,11 +852,18 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                         {dayEvents.slice(0, 3).map(evt => (
                           <div 
                             key={evt.id} 
-                            className={getEventBadgeStyles(evt)}
-                            title={`${evt.time} - ${evt.clientName} (${evt.notes})`}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              setDraggedEvent(evt);
+                              e.dataTransfer.setData('text/plain', evt.id);
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            className={getEventBadgeStyles(evt) + " cursor-grab active:cursor-grabbing hover:scale-[1.02] shadow-2xs"}
+                            title={`${evt.clientName} - Arrastra a otro día para cambiar la fecha de vencimiento`}
                           >
                             {getEventIcon(evt.type)}
-                            <span className="truncate">{evt.time} {evt.clientName}</span>
+                            <span className="truncate">{evt.clientName}</span>
                           </div>
                         ))}
                         {dayEvents.length > 3 && (

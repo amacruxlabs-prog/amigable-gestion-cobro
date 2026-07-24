@@ -166,10 +166,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     formik.setFieldValue('location', '');
   };
 
-  const setRelativeDate = (days: number) => {
+  const setRelativeDueDate = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
-    formik.setFieldValue('date', d.toISOString().substring(0, 10));
+    formik.setFieldValue('dueDate', d.toISOString().substring(0, 10));
   };
 
   return (
@@ -353,58 +353,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     onChange={formik.handleChange}
                     step="0.01"
                     className="w-full border p-2 rounded"
+                    placeholder="0.00"
                   />
                   {formik.touched.paidAmount && formik.errors.paidAmount && (
                     <div className="text-red-500 text-xs mt-1">{formik.errors.paidAmount}</div>
                   )}
                 </div>
                 <div>
-                  <label className="font-semibold block mb-1">Fecha de Cobro / Emisión</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={formik.values.date}
-                    onChange={(e) => {
-                      formik.handleChange(e);
-                      if (!formik.values.dueDate) {
-                        formik.setFieldValue('dueDate', e.target.value);
-                      }
-                    }}
-                    className="w-full border p-2 rounded"
-                  />
-                  <div className="flex gap-1 mt-1.5 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => setRelativeDate(0)}
-                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
-                    >
-                      Hoy
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRelativeDate(7)}
-                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
-                    >
-                      +1 sem
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRelativeDate(15)}
-                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
-                    >
-                      +15 días
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRelativeDate(30)}
-                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
-                    >
-                      +1 mes
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="font-semibold block mb-1">Fecha de Vencimiento</label>
+                  <label className="font-semibold block mb-1">Fecha de Vencimiento *</label>
                   <input
                     type="date"
                     name="dueDate"
@@ -415,21 +371,31 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   <div className="flex gap-1 mt-1.5 flex-wrap">
                     <button
                       type="button"
-                      onClick={() => formik.setFieldValue('dueDate', formik.values.date)}
+                      onClick={() => setRelativeDueDate(0)}
                       className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
                     >
-                      = Emisión
+                      Hoy
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        const d = new Date(formik.values.date);
-                        d.setDate(d.getDate() + 30);
-                        formik.setFieldValue('dueDate', d.toISOString().substring(0, 10));
-                      }}
+                      onClick={() => setRelativeDueDate(7)}
                       className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
                     >
-                      +30 días
+                      +1 sem
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRelativeDueDate(15)}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      +15 días
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRelativeDueDate(30)}
+                      className="px-2 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold rounded cursor-pointer"
+                    >
+                      +1 mes
                     </button>
                   </div>
                 </div>

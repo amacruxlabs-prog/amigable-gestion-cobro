@@ -85,6 +85,10 @@ class CollectionController extends Controller
             'due_date' => 'required|date',
         ]);
 
+        $exchangeRate = \App\Models\ExchangeRate::where('business_id', $business->id)->orderBy('created_at', 'desc')->first();
+        $rate = $exchangeRate ? $exchangeRate->rate : null;
+        $amount_bs = $rate ? $validated['total_amount'] * $rate : null;
+
         $transaction = Transaction::create([
             'business_id' => $business->id,
             'client_name' => $validated['client_name'],
@@ -93,6 +97,8 @@ class CollectionController extends Controller
             'total_amount' => $validated['total_amount'],
             'paid_amount' => 0,
             'status' => 'PENDING',
+            'exchange_rate' => $rate,
+            'amount_bs' => $amount_bs,
             'due_date' => $validated['due_date'] ?? null,
         ]);
 
@@ -154,10 +160,16 @@ class CollectionController extends Controller
             return $this->errorResponse('La cuenta está cancelada. No se pueden registrar abonos.', 'CANCELLED', null, 400);
         }
 
-        DB::transaction(function () use ($transaction, $validated) {
+        $exchangeRate = \App\Models\ExchangeRate::where('business_id', $business->id)->orderBy('created_at', 'desc')->first();
+        $rate = $exchangeRate ? $exchangeRate->rate : null;
+        $amount_bs = $rate ? $validated['amount'] * $rate : null;
+
+        DB::transaction(function () use ($transaction, $validated, $rate, $amount_bs) {
             Payment::create([
                 'transaction_id' => $transaction->id,
                 'amount' => $validated['amount'],
+                'exchange_rate' => $rate,
+                'amount_bs' => $amount_bs,
                 'payment_date' => $validated['payment_date'] ?? now(),
             ]);
 
@@ -226,6 +238,10 @@ class CollectionController extends Controller
             'due_date' => 'sometimes|nullable|date',
             'status' => 'sometimes|string|in:PENDING,PAID,OVERDUE,CANCELLED',
         ]);
+
+        if (isset($validated['total_amount']) && $transaction->exchange_rate) {
+            $validated['amount_bs'] = $validated['total_amount'] * $transaction->exchange_rate;
+        }
 
         $transaction->update($validated);
         Cache::forget("business_{$business->id}_dashboard");

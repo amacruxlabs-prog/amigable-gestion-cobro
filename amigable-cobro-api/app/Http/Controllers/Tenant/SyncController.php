@@ -20,11 +20,16 @@ class SyncController extends Controller
 
         $businessId = auth()->user()->business_id;
 
+        $exchangeRate = \App\Models\ExchangeRate::where('business_id', $businessId)->orderBy('created_at', 'desc')->first();
+        $rate = $exchangeRate ? $exchangeRate->rate : null;
+
         $imported = 0;
         $errors = 0;
 
         foreach ($request->transactions as $tx) {
             try {
+                $amount_bs = $rate ? $tx['total_amount'] * $rate : null;
+
                 DB::table('transactions')->insert([
                     'business_id' => $businessId,
                     'client_name' => $tx['client_name'],
@@ -33,6 +38,8 @@ class SyncController extends Controller
                     'total_amount' => $tx['total_amount'],
                     'paid_amount' => $tx['paid_amount'] ?? 0,
                     'status' => $tx['status'] === 'PAID' ? 'PAID' : 'PENDING',
+                    'exchange_rate' => $rate,
+                    'amount_bs' => $amount_bs,
                     'created_at' => $tx['date'] ?? now(),
                     'due_date' => $tx['due_date'] ?? $tx['date'] ?? now(),
                     'updated_at' => now(),

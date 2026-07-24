@@ -9,6 +9,8 @@ class Payment extends Model
     protected $fillable = [
         'transaction_id',
         'amount',
+        'exchange_rate',
+        'amount_bs',
         'payment_date',
     ];
 

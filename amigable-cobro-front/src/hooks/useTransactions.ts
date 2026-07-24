@@ -13,6 +13,7 @@ export function useTransactions() {
   const [dbLoading, setDbLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [currentRate, setCurrentRate] = useState<number | null>(null);
 
   const [availableHeaders, setAvailableHeaders] = useState<string[]>(['Nombre de Cliente', 'Monto Total', 'Estado de Pago', 'Fecha']);
   const [currentMapping, setCurrentMapping] = useState<ColumnMapping>({
@@ -40,28 +41,19 @@ export function useTransactions() {
     try {
       setDbLoading(true);
       
-      const [resTransactions, resAnalytics, resCalendar] = await Promise.all([
-        api.get('/tenant/transactions', {
-          params: {
-            page,
-            search: filters.searchTerm,
-            status: filters.status !== 'todos' ? (filters.status === 'Pagado' ? 'PAID' : filters.status === 'Cancelado' ? 'CANCELLED' : filters.status === 'Vencido' ? 'OVERDUE' : 'PENDING') : undefined,
-            start_date: filters.startDate || undefined,
-            end_date: filters.endDate || undefined,
-          }
-        }),
-        api.get('/tenant/analytics/dashboard'),
-        api.get('/tenant/transactions/calendar', {
-          params: {
-            start_date: filters.startDate || undefined,
-            end_date: filters.endDate || undefined,
-          }
-        })
-      ]);
+      const resInit = await api.get('/tenant/dashboard/init', {
+        params: {
+          page,
+          search: filters.searchTerm,
+          status: filters.status !== 'todos' ? (filters.status === 'Pagado' ? 'PAID' : filters.status === 'Cancelado' ? 'CANCELLED' : filters.status === 'Vencido' ? 'OVERDUE' : 'PENDING') : undefined,
+          start_date: filters.startDate || undefined,
+          end_date: filters.endDate || undefined,
+        }
+      });
       
-      const paginatedData = resTransactions.data.data.transactions;
-      const kpis = resAnalytics.data.data.kpis;
-      const calendarData = resCalendar.data.data.transactions;
+      const paginatedData = resInit.data.data.transactions;
+      const kpis = resInit.data.data.kpis;
+      const calendarData = resInit.data.data.calendar;
       
       const mappedTxs = paginatedData.data.map((t: any) => ({
         id: String(t.id),
@@ -74,6 +66,8 @@ export function useTransactions() {
         status: t.status === 'PAID' ? 'Pagado' : t.status === 'CANCELLED' ? 'Cancelado' : t.status === 'OVERDUE' ? 'Vencido' : 'Por cobrar',
         date: t.created_at.substring(0, 10),
         dueDate: t.due_date ? t.due_date.substring(0, 10) : '',
+        exchange_rate: t.exchange_rate,
+        amount_bs: t.amount_bs,
         payments: t.payments || [],
         discounts: t.discounts || [],
       }));
@@ -86,6 +80,7 @@ export function useTransactions() {
         paidAmount: Number(t.paid_amount),
         status: t.status === 'PAID' ? 'Pagado' : t.status === 'CANCELLED' ? 'Cancelado' : t.status === 'OVERDUE' ? 'Vencido' : 'Por cobrar',
         date: t.created_at.substring(0, 10),
+        dueDate: t.due_date ? t.due_date.substring(0, 10) : '',
       }));
 
       setTransactions(mappedTxs);
@@ -93,6 +88,7 @@ export function useTransactions() {
       setCurrentPage(paginatedData.current_page);
       setTotalPages(paginatedData.last_page);
       setStats(kpis);
+      setCurrentRate(resInit.data.data.current_exchange_rate || null);
       
     } catch (error) {
       toast('Error cargando transacciones o analíticas', 'error');
@@ -287,5 +283,6 @@ export function useTransactions() {
     currentPage,
     setCurrentPage,
     totalPages,
+    currentRate,
   };
 }

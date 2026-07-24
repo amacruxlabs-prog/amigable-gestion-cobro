@@ -24,7 +24,8 @@ import {
   TrendingUp,
   Percent,
   PhoneCall,
-  ListTodo
+  ListTodo,
+  Loader2
 } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -77,6 +78,8 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
   const [isRegisterPaymentOpen, setIsRegisterPaymentOpen] = useState(false);
   // Drag and Drop state
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null);
+  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
   const handleDropOnDay = async (evt: CalendarEvent, targetDateStr: string) => {
     if (evt.date === targetDateStr) return;
@@ -206,7 +209,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
         transactionId: tx.id,
         amount: tx.amount,
         status: isTxPaid ? 'completed' : 'pending',
-        notes: `Vencimiento de cobro por valor de $${tx.amount.toLocaleString('es-CO')}`,
+        notes: `Vencimiento de cobro por valor de $${tx.amount.toLocaleString()}`,
         time: '08:00'
       });
     });
@@ -238,19 +241,30 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       const tx = transactions.find(t => t.id === evt.transactionId);
       if (!tx) return evt;
 
+      let updatedEvt = { ...evt };
+      
       const isTxPaid = tx.status === 'Pagado';
       if (isTxPaid && evt.status !== 'completed' && (evt.type === 'vencimiento' || evt.type === 'promesa')) {
         changed = true;
-        return { ...evt, status: 'completed' as const };
+        updatedEvt.status = 'completed';
+      } else if (!isTxPaid && evt.status === 'completed' && (evt.type === 'vencimiento' || evt.type === 'promesa')) {
+        changed = true;
+        updatedEvt.status = 'pending';
       }
       
       const outstanding = tx.amount - (Number(tx.paidAmount) || 0);
       if (!isTxPaid && evt.amount !== undefined && evt.amount !== outstanding) {
         changed = true;
-        return { ...evt, amount: outstanding };
+        updatedEvt.amount = outstanding;
+      }
+      
+      const dbDueDateStr = tx.dueDate || tx.date;
+      if (evt.type === 'vencimiento' && evt.date !== dbDueDateStr) {
+        changed = true;
+        updatedEvt.date = dbDueDateStr;
       }
 
-      return evt;
+      return updatedEvt;
     });
 
     // Seed events for newly added transactions that aren't represented yet
@@ -477,6 +491,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       return;
     }
 
+    setIsSubmittingPayment(true);
     try {
       const txId = activeEvent.transactionId;
       if (!txId) {
@@ -486,18 +501,26 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
       
       await onRegisterPayment(txId, amountNum, activeEvent.date);
       
-      const updated = events.map(evt => {
-        if (evt.id === activeEvent.id || (evt.transactionId === txId && (evt.type === 'vencimiento' || evt.type === 'promesa'))) {
-          return { ...evt, status: 'completed' as const };
-        }
-        return evt;
-      });
-      saveEvents(updated);
+      const tx = transactions.find(t => t.id === txId);
+      const currentOutstanding = tx ? tx.amount - (Number(tx.paidAmount) || 0) : 0;
+      const willBeCompleted = currentOutstanding <= amountNum;
+
+      if (willBeCompleted) {
+        const updated = events.map(evt => {
+          if (evt.id === activeEvent.id || (evt.transactionId === txId && (evt.type === 'vencimiento' || evt.type === 'promesa'))) {
+            return { ...evt, status: 'completed' as const };
+          }
+          return evt;
+        });
+        saveEvents(updated);
+      }
       
       setIsRegisterPaymentOpen(false);
       setActiveEvent(null);
     } catch (err) {
       toast('Error al registrar abono', 'error');
+    } finally {
+      setIsSubmittingPayment(false);
     }
   };
 
@@ -1592,7 +1615,7 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
               </div>
 
               <div>
-                <label className="block font-bold mb-1 text-slate-750 dark:text-slate-300">Monto del Abono (COP)</label>
+                <label className="block font-bold mb-1 text-slate-750 dark:text-slate-300">Monto del Abono ($)</label>
                 <input
                   type="number"
                   required
@@ -1615,9 +1638,11 @@ export function PaymentCalendar({ transactions, onRegisterPayment, onToggleStatu
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-success"
+                  disabled={isSubmittingPayment}
+                  className="btn btn-success flex items-center justify-center gap-2"
                 >
-                  Abonar Pago
+                  {isSubmittingPayment && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSubmittingPayment ? 'Abonando...' : 'Abonar Pago'}
                 </button>
               </div>
             </form>

@@ -14,7 +14,8 @@ export default defineConfig(() => {
       react(), 
       tailwindcss(),
       VitePWA({
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
+        selfDestroying: true,
         devOptions: {
           enabled: true
         },

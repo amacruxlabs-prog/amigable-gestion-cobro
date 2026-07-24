@@ -54,6 +54,7 @@ export default function App() {
     currentPage,
     setCurrentPage,
     totalPages,
+    currentRate,
   } = useTransactions();
 
   const [currentTime, setCurrentTime] = useState('');
@@ -402,6 +403,7 @@ export default function App() {
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
+                  currentRate={currentRate}
                 />
               </div>
             )}

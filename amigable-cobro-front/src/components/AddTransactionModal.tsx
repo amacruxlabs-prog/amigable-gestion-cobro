@@ -8,6 +8,8 @@ interface AddTransactionModalProps {
   transactions: Transaction[];
   onAddTransaction: (newTx: Omit<Transaction, 'id'>) => Promise<void> | void;
   onClose: () => void;
+  initialClient?: { name: string; cedula: string; phone: string; location: string };
+  currentRate?: number | null;
 }
 
 const parsePhoneNumber = (phoneStr?: string) => {
@@ -49,8 +51,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   transactions,
   onAddTransaction,
   onClose,
+  initialClient,
+  currentRate,
 }) => {
-  const [clientSelectionMode, setClientSelectionMode] = useState<'existing' | 'new'>('existing');
+  const [clientSelectionMode, setClientSelectionMode] = useState<'existing' | 'new'>(initialClient ? 'existing' : 'existing');
   const [clientSearch, setClientSearch] = useState('');
 
   const uniqueClients = useMemo(() => {
@@ -80,18 +84,18 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const formik = useFormik({
     initialValues: {
-      clientName: '',
-      cedulaType: 'V',
-      cedulaNumber: '',
+      clientName: initialClient?.name || '',
+      cedulaType: initialClient ? parseCedula(initialClient.cedula).type : 'V',
+      cedulaNumber: initialClient ? parseCedula(initialClient.cedula).number : '',
       amount: '',
       paidAmount: '',
       status: 'Cobrar',
       date: new Date().toISOString().substring(0, 10),
       dueDate: new Date().toISOString().substring(0, 10),
-      phone: '',
-      phoneCountryCode: '+58',
-      location: '',
-      selectedClient: false,
+      phone: initialClient ? parsePhoneNumber(initialClient.phone).number : '',
+      phoneCountryCode: initialClient ? parsePhoneNumber(initialClient.phone).code : '+58',
+      location: initialClient?.location || '',
+      selectedClient: !!initialClient,
     },
     validationSchema: Yup.object({
       clientName: Yup.string().required('El nombre del cliente es obligatorio'),
@@ -181,7 +185,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl overflow-hidden animate-fade-in relative">
         <div className="p-5 border-b border-slate-150 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
           <div>
@@ -350,6 +354,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 {formik.touched.amount && formik.errors.amount && (
                   <div className="text-red-500 text-xs mt-1">{formik.errors.amount}</div>
                 )}
+                {currentRate && formik.values.amount && !isNaN(Number(formik.values.amount)) && (
+                  <div className="text-[10px] text-slate-500 mt-1 font-medium">
+                    Eq. {(Number(formik.values.amount) * currentRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs. (Tasa: {currentRate})
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -365,6 +374,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   />
                   {formik.touched.paidAmount && formik.errors.paidAmount && (
                     <div className="text-red-500 text-xs mt-1">{formik.errors.paidAmount}</div>
+                  )}
+                  {currentRate && formik.values.paidAmount && !isNaN(Number(formik.values.paidAmount)) && (
+                    <div className="text-[10px] text-slate-500 mt-1 font-medium">
+                      Eq. {(Number(formik.values.paidAmount) * currentRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
+                    </div>
                   )}
                 </div>
                 <div>

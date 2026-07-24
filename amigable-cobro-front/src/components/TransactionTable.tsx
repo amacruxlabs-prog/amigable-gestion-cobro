@@ -1,6 +1,6 @@
 import React from 'react';
 import { Transaction, FilterState } from '../types';
-import { formatCurrency, formatDate, getVenezuelaTodayStr } from '../utils/format';
+import { formatCurrency, formatDate, getVenezuelaTodayStr, formatDateTime } from '../utils/format';
 import { Search, ChevronLeft, ChevronRight, Filter, Calendar, DollarSign, PlusCircle, Trash2, CheckCircle2, AlertCircle, XCircle, Phone, Plus, Check, X, History, MapPin, User, UserPlus, Users, Loader2 } from 'lucide-react';
 import { useTransactionTable } from '../hooks/useTransactionTable';
 import { AddTransactionModal } from './AddTransactionModal';
@@ -24,6 +24,7 @@ interface TransactionTableProps {
   currentPage?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
+  currentRate?: number | null;
 }
 
 const parsePhoneNumber = (phoneStr?: string) => {
@@ -59,9 +60,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   onFilterChange,
   isSuperadmin,
   onShowDiscountModal,
-  currentPage,
-  totalPages,
+  currentPage = 1,
+  totalPages = 1,
   onPageChange,
+  currentRate,
 }) => {
   const {
     startIndex,
@@ -125,8 +127,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const [savingClient, setSavingClient] = React.useState(false);
   const [savingPayment, setSavingPayment] = React.useState(false);
   const [savingTx, setSavingTx] = React.useState(false);
+  const [paymentModalTx, setPaymentModalTx] = React.useState<any | null>(null);
+  const [paymentAmount, setPaymentAmount] = React.useState<string>('');
+  const [paymentModalMulti, setPaymentModalMulti] = React.useState<any[] | null>(null);
+  const [selectedMultiTxs, setSelectedMultiTxs] = React.useState<number[]>([]);
   const [refreshingModal, setRefreshingModal] = React.useState(false);
   const selectedClientNameRef = React.useRef<string | null>(null);
+  const [addFormInitialClient, setAddFormInitialClient] = React.useState<any | null>(null);
+  const [highlightedTxId, setHighlightedTxId] = React.useState<any>(null);
+  const [highlightedPaymentId, setHighlightedPaymentId] = React.useState<any>(null);
+
+  const [modalTxPage, setModalTxPage] = React.useState(1);
+  const [modalPaymentPage, setModalPaymentPage] = React.useState(1);
+  const [modalTxSearch, setModalTxSearch] = React.useState('');
 
   const groupedClients = React.useMemo(() => {
     const map = new Map<string, {
@@ -220,6 +233,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     const paymentRate = totalDebt > 0 ? (totalPaid / totalDebt) * 100 : 0;
 
     selectedClientNameRef.current = representative.clientName;
+    setModalTxPage(1);
+    setModalPaymentPage(1);
+    setModalTxSearch('');
     setSelectedClientDetails({
       name: representative.clientName,
       phone: representative.phone,
@@ -358,11 +374,29 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       {showAddForm && (
         <AddTransactionModal
           transactions={transactions}
+          initialClient={addFormInitialClient}
           onAddTransaction={async (tx) => {
             await onAddTransaction(tx);
+            const tempId = 'temp-' + Date.now();
+            setSelectedClientDetails((prev: any) => {
+              if (!prev) return prev;
+              const newTxWithId = { ...tx, id: tempId, payments: [] };
+              return {
+                ...prev,
+                transactions: [newTxWithId, ...prev.transactions]
+              };
+            });
+            setHighlightedTxId(tempId);
+            setTimeout(() => setHighlightedTxId(null), 3000);
+            
             setShowAddForm(false);
+            setAddFormInitialClient(null);
           }}
-          onClose={() => setShowAddForm(false)}
+          onClose={() => {
+            setShowAddForm(false);
+            setAddFormInitialClient(null);
+          }}
+          currentRate={currentRate}
         />
       )}
 
@@ -617,11 +651,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       <span className={`badge ${
                         g.status === 'Pagado' ? 'badge-success' : g.status === 'Cancelado' ? 'badge-slate' : g.status === 'Vencido' ? 'badge-danger' : 'badge-warning'
                       }`}>
-                        {g.status === 'Pagado' ? <><CheckCircle2 className="w-3 h-3" /> Pagado</> : g.status === 'Cancelado' ? <><XCircle className="w-3 h-3" /> Cancelada</> : g.status === 'Vencido' ? <><AlertCircle className="w-3 h-3" /> Vencida</> : <><AlertCircle className="w-3 h-3" /> Cobrar</>}
+                        {g.status === 'Pagado' ? <><CheckCircle2 className="w-3 h-3" /> Pagado</> : g.status === 'Cancelado' ? <><XCircle className="w-3 h-3" /> Cancelada</> : g.status === 'Vencido' ? <><AlertCircle className="w-3 h-3" /> Vencida</> : <><AlertCircle className="w-3 h-3" /> {g.transactions.filter((t: any) => t.status !== 'Pagado' && t.status !== 'Cancelado').length > 1 ? `${g.transactions.filter((t: any) => t.status !== 'Pagado' && t.status !== 'Cancelado').length} cuentas deben` : 'Pendiente'}</>}
                       </span>
-                      <div className="text-[9px] text-slate-400 mt-1 font-mono">
-                        {g.transactions.length} cuenta{g.transactions.length !== 1 ? 's' : ''}
-                      </div>
                     </td>
                   </tr>
                 );
@@ -667,7 +698,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       {selectedClientDetails && (() => {
         const c = selectedClientDetails;
 
-        const allPayments: { txId: string; paymentId: number; amount: number; date: string }[] = [];
+        const allPayments: { txId: string; paymentId: number; amount: number; date: string; exchange_rate?: number; amount_bs?: number }[] = [];
         c.transactions.forEach((t: any) => {
           if (t.payments && t.payments.length > 0) {
             t.payments.forEach((p: any) => {
@@ -675,7 +706,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 txId: t.id,
                 paymentId: p.id,
                 amount: p.amount,
-                date: p.date
+                date: p.date,
+                exchange_rate: p.exchange_rate,
+                amount_bs: p.amount_bs
               });
             });
           } else if (t.paidAmount > 0) {
@@ -704,125 +737,28 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         });
         allDiscounts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        return (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-            <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
-              {refreshingModal && (
-                <div className="absolute inset-0 z-[120] bg-white/70 dark:bg-slate-900/70 flex items-center justify-center rounded-2xl">
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-                    <span className="text-xs font-semibold text-slate-500">Actualizando datos...</span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Modal Header */}
-              <div className="bg-slate-50 dark:bg-slate-900/50 p-5 border-b border-slate-150 dark:border-slate-800 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                    <User className="w-5 h-5" />
-                  </div>
-                  {editingClient ? (
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        const fd = new FormData(e.target as HTMLFormElement);
-                        const data = {
-                          client_name: (fd.get('client_name') as string)?.trim() || c.name,
-                          client_document: (fd.get('client_document') as string)?.trim() || '',
-                          client_phone: (fd.get('client_phone') as string)?.trim() || '',
-                        };
-                        if (!data.client_name) return;
-                        setSavingClient(true);
-                        await onUpdateClient?.(c.name, data);
-                        setSelectedClientDetails((prev: any) => {
-                          if (!prev) return prev;
-                          const updatedTxs = prev.transactions.map((tx: any) => ({
-                            ...tx,
-                            clientName: data.client_name,
-                            cedula: data.client_document || tx.cedula,
-                            phone: data.client_phone || tx.phone,
-                          }));
-                          return {
-                            ...prev,
-                            name: data.client_name,
-                            phone: data.client_phone || prev.phone,
-                            cedula: data.client_document || prev.cedula,
-                            transactions: updatedTxs,
-                          };
-                        });
-                        if (data.client_name !== c.name) {
-                          selectedClientNameRef.current = data.client_name;
-                        }
-                        setSavingClient(false);
-                        setEditingClient(false);
-          </div>
-          <div className="flex items-center gap-1.5 font-bold">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="p-1 px-2.5 rounded-lg border border-slate-200 hover:bg-white disabled:pointer-events-none disabled:opacity-45 bg-white cursor-pointer flex items-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700"
-            >
-              <ChevronLeft className="w-4 h-4 text-slate-655 dark:text-slate-300" />
-            </button>
-            <span className="bg-white px-3 py-1 rounded-lg border border-slate-200 font-mono text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-350">
-              {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="p-1 px-2.5 rounded-lg border border-slate-200 hover:bg-white disabled:pointer-events-none disabled:opacity-45 bg-white cursor-pointer flex items-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700"
-            >
-              <ChevronRight className="w-4 h-4 text-slate-655 dark:text-slate-300" />
-            </button>
-          </div>
-        </div>
-      )}
+        const filteredModalTxs = c.transactions.filter((t: any) => 
+          !modalTxSearch || t.id.toString().includes(modalTxSearch) || (t.amount && t.amount.toString().includes(modalTxSearch))
+        );
 
-      {/* Client Detail & History Modal */}
-      {selectedClientDetails && (() => {
-        const c = selectedClientDetails;
-
-        const allPayments: { txId: string; paymentId: number; amount: number; date: string }[] = [];
-        c.transactions.forEach((t: any) => {
-          if (t.payments && t.payments.length > 0) {
-            t.payments.forEach((p: any) => {
-              allPayments.push({
-                txId: t.id,
-                paymentId: p.id,
-                amount: p.amount,
-                date: p.date
-              });
-            });
-          } else if (t.paidAmount > 0) {
-            allPayments.push({
-              txId: t.id,
-              paymentId: 0,
-              amount: t.paidAmount,
-              date: t.date
-            });
-          }
+        const sortedModalTxs = [...filteredModalTxs].sort((a: any, b: any) => {
+          const aPending = a.status !== 'Pagado' && a.status !== 'Cancelado' ? 1 : 0;
+          const bPending = b.status !== 'Pagado' && b.status !== 'Cancelado' ? 1 : 0;
+          if (aPending !== bPending) return bPending - aPending;
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
-        allPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        const allDiscounts: { txId: string; percentage: number; amount: number; date: string }[] = [];
-        c.transactions.forEach((t: any) => {
-          if (t.discounts && t.discounts.length > 0) {
-            t.discounts.forEach((d: any) => {
-              allDiscounts.push({
-                txId: t.id,
-                percentage: d.percentage,
-                amount: d.amount,
-                date: d.date
-              });
-            });
-          }
-        });
-        allDiscounts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const txItemsPerPage = 10;
+        const totalModalTxPages = Math.max(1, Math.ceil(sortedModalTxs.length / txItemsPerPage));
+        const paginatedModalTxs = sortedModalTxs.slice((modalTxPage - 1) * txItemsPerPage, modalTxPage * txItemsPerPage);
+        
+        const paymentItemsPerPage = 10;
+        const totalModalPaymentPages = Math.max(1, Math.ceil(allPayments.length / paymentItemsPerPage));
+        const paginatedModalPayments = allPayments.slice((modalPaymentPage - 1) * paymentItemsPerPage, modalPaymentPage * paymentItemsPerPage);
 
         return (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-            <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+            <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
               {refreshingModal && (
                 <div className="absolute inset-0 z-[120] bg-white/70 dark:bg-slate-900/70 flex items-center justify-center rounded-2xl">
                   <div className="flex flex-col items-center gap-2">
@@ -881,8 +817,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                           <input
                             name="client_name"
                             defaultValue={c.name}
-                            disabled={savingClient}
-                            className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs flex-1 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-bold disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-not-allowed"
+                            className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs flex-1 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
                             required
                           />
                         </div>
@@ -892,8 +827,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             <input
                               name="client_document"
                               defaultValue={c.cedula || ''}
-                              disabled={savingClient}
-                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-not-allowed"
+                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                             />
                           </div>
                           <div className="flex items-center gap-1">
@@ -901,8 +835,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             <input
                               name="client_phone"
                               defaultValue={c.phone || ''}
-                              disabled={savingClient}
-                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-not-allowed"
+                              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px] w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                             />
                           </div>
                         </div>
@@ -1001,12 +934,36 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
                   {/* Left panel: List of Debts */}
-                  <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
-                    <div className="bg-slate-50 dark:bg-slate-800/40 p-3 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Historial de Cuentas / Deudas</span>
-                      <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-semibold">
-                        {c.transactions.length} registros
-                      </span>
+                  <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                    <div className="bg-slate-50 dark:bg-slate-800/40 p-3 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Historial de Cuentas / Deudas</span>
+                        <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-semibold">
+                          {c.transactions.length} registros
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1 max-w-sm ml-auto">
+                        <div className="relative flex-1">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={modalTxSearch}
+                            onChange={(e) => { setModalTxSearch(e.target.value); setModalTxPage(1); }}
+                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            setAddFormInitialClient(c);
+                            setShowAddForm(true);
+                          }}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors shadow-xs shrink-0"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          Nueva Cuenta
+                        </button>
+                      </div>
                     </div>
                     <div className="overflow-x-auto max-h-[300px]">
                       <table className="w-full text-left text-xs whitespace-nowrap">
@@ -1017,18 +974,74 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                             <th className="px-4 py-2.5">Vence</th>
                             <th className="px-4 py-2.5">Monto</th>
                             <th className="px-4 py-2.5">Abonado</th>
+                            <th className="px-4 py-2.5">Restante</th>
                             <th className="px-4 py-2.5">Estado</th>
                             <th className="px-4 py-2.5"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                          {c.transactions.map((t: any, idx: number) => {
+                          {paginatedModalTxs.map((t: any, idx: number) => {
                             const tPaid = t.status === 'Pagado' ? t.amount : (t.paidAmount || 0);
                             const isEditingTx = editingTxInModal?.id === t.id;
                             return (
-                              <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                              <tr key={idx} className={highlightedTxId === t.id ? "bg-emerald-100 dark:bg-emerald-900/40 transition-colors duration-1000" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"}>
                                   {isEditingTx ? (
-                                    <td colSpan={7} className="px-4 py-3">
+                                    <td colSpan={8} className="px-4 py-3">
+                                    <form
+                                      onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        const fd = new FormData(e.target as HTMLFormElement);
+                                        const data: any = {};
+                                        fd.forEach((v, k) => { data[k] = v; });
+                                        if (!data.client_name?.trim()) return;
+                                        setSavingTx(true);
+                                        setRefreshingModal(true);
+                                        await onUpdateTransaction(t.id, {
+                                          client_name: data.client_name,
+                                          total_amount: parseFloat(data.total_amount),
+                                          client_document: data.client_document || '',
+                                          client_phone: data.client_phone || '',
+                                        });
+                                        setSelectedClientDetails((prev: any) => {
+                                          if (!prev) return prev;
+                                          const updatedTxs = prev.transactions.map((tx: any) => {
+                                            if (tx.id !== t.id) return tx;
+                                            return {
+                                              ...tx,
+                                              clientName: data.client_name,
+                                              amount: parseFloat(data.total_amount),
+                                              cedula: data.client_document || '',
+                                              phone: data.client_phone || '',
+                                            };
+                                          });
+                                          const updatedName = data.client_name;
+                                          const rep = updatedTxs.find((tx: any) => tx.phone || tx.cedula || tx.location) || updatedTxs[0];
+                                          return {
+                                            ...prev,
+                                            name: updatedName,
+                                            phone: rep.phone,
+                                            cedula: rep.cedula,
+                                            location: rep.location,
+                                            transactions: updatedTxs,
+                                          };
+                                        });
+                                        if (data.client_name?.trim().toLowerCase() !== t.clientName?.trim().toLowerCase()) {
+                                          selectedClientNameRef.current = data.client_name;
+                                        }
+                                        setSavingTx(false);
+                                        setEditingTxInModal(null);
+                                      }}
+                                      className="flex flex-wrap items-center gap-2"
+                                    >
+                                      <input name="client_name" defaultValue={t.clientName} placeholder="Nombre" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-32 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <input name="total_amount" type="number" step="0.01" defaultValue={t.amount} placeholder="Monto" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-24 font-mono bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <input name="client_document" defaultValue={t.cedula} placeholder="Cédula" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <input name="client_phone" defaultValue={t.phone} placeholder="Teléfono" className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs w-28 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                      <button type="submit" disabled={savingTx} className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Guardar">
+                                        {savingTx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                      </button>
+                                      <button type="button" disabled={savingTx} onClick={() => !savingTx && setEditingTxInModal(null)} className="p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer disabled:opacity-40 disabled:pointer-events-none" title="Cancelar">
+                                        <X className="w-3.5 h-3.5" />
                                       </button>
                                     </form>
                                   </td>
@@ -1040,6 +1053,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                     <td className="px-4 py-2.5 font-bold font-mono text-slate-700 dark:text-slate-350">
                                       <div className="flex flex-col">
                                         <span>{formatMoney(t.amount)}</span>
+                                        {t.amount_bs && t.exchange_rate && (
+                                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-medium">
+                                            Eq. {t.amount_bs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} Bs.
+                                          </span>
+                                        )}
                                         {t.discounts && t.discounts.length > 0 && (
                                           <span className="text-[9px] text-purple-650 dark:text-purple-400 font-mono font-medium" title="Descuentos aplicados">
                                             Desc: {t.discounts.map((d: any) => `${d.percentage}% (-${formatMoney(d.amount)})`).join(', ')}
@@ -1048,6 +1066,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                       </div>
                                     </td>
                                     <td className="px-4 py-2.5 font-mono text-emerald-600 dark:text-emerald-400">+{formatMoney(tPaid)}</td>
+                                    <td className="px-4 py-2.5 font-bold font-mono text-rose-600 dark:text-rose-400">{formatMoney(Math.max(0, t.amount - tPaid))}</td>
                                     <td className="px-4 py-2.5">
                                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
                                         t.status === 'Pagado' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-450' : t.status === 'Cancelado' ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400' : t.status === 'Vencido' ? 'bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-450' : 'bg-amber-100 text-amber-800 dark:bg-amber-955/20 dark:text-amber-450'
@@ -1055,7 +1074,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                         {t.status === 'Pagado' ? 'Pagado' : t.status === 'Cancelado' ? 'Cancelado' : t.status === 'Vencido' ? 'Vencido' : 'Pendiente'}
                                       </span>
                                     </td>
-                                    <td className="px-4 py-2.5">
+                                    <td className="px-4 py-2.5 flex items-center gap-0.5">
+                                      {t.status !== 'Pagado' && t.status !== 'Cancelado' && (
+                                        <button
+                                          onClick={() => setPaymentModalTx(t)}
+                                          className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded cursor-pointer"
+                                          title="Registrar Abono"
+                                        >
+                                          <DollarSign className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
                                       <button
                                         onClick={() => setEditingTxInModal(t)}
                                         className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded cursor-pointer"
@@ -1091,27 +1119,65 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         </tbody>
                       </table>
                     </div>
+                    {totalModalTxPages > 1 && (
+                      <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500 font-semibold">Página {modalTxPage} de {totalModalTxPages}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setModalTxPage(Math.max(1, modalTxPage - 1))}
+                            disabled={modalTxPage === 1}
+                            className="p-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setModalTxPage(Math.min(totalModalTxPages, modalTxPage + 1))}
+                            disabled={modalTxPage === totalModalTxPages}
+                            className="p-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Right panel: List of Payments & Discounts */}
-                  <div className="lg:col-span-5 space-y-4">
+                  <div className="lg:col-span-4 space-y-4">
                     {/* Payments */}
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
                       <div className="bg-slate-50 dark:bg-slate-800/40 p-3 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-850 dark:text-slate-200">Abonos Realizados</span>
-                        <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-semibold">
-                          {allPayments.length} abonos
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-850 dark:text-slate-200">Abonos Realizados</span>
+                          <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-semibold">
+                            {allPayments.length} abonos
+                          </span>
+                        </div>
+                        {c.transactions.some((t: any) => t.status !== 'Pagado' && t.status !== 'Cancelado') && (
+                          <button
+                            onClick={() => {
+                              const pending = c.transactions.filter((t: any) => t.status !== 'Pagado' && t.status !== 'Cancelado');
+                              if (pending.length > 0) {
+                                setPaymentModalMulti(pending);
+                                setSelectedMultiTxs(pending.map((p:any) => p.id));
+                              }
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-1 rounded flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                          >
+                            <DollarSign className="w-3 h-3" />
+                            Nuevo Abono
+                          </button>
+                        )}
                       </div>
                       
                       <div className="max-h-[180px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 p-4 space-y-2">
                         {allPayments.length === 0 ? (
                           <p className="text-center text-slate-455 text-xs py-4">No se han registrado abonos para este cliente.</p>
                         ) : (
-                          allPayments.map((p, idx) => {
+                          paginatedModalPayments.map((p, idx) => {
                             const isEditing = editingPayment?.txId === p.txId && editingPayment?.paymentId === p.paymentId;
                             return (
-                              <div key={idx} className="flex justify-between items-center text-xs py-1 gap-2">
+                              <div key={idx} className={`flex justify-between items-center text-xs py-1 gap-2 ${highlightedPaymentId === p.paymentId ? "bg-emerald-100 dark:bg-emerald-900/40 px-2 rounded-lg transition-colors duration-1000" : ""}`}>
                                 {isEditing ? (
                                   <form
                                     onSubmit={async (e) => {
@@ -1137,7 +1203,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                       setSavingPayment(false);
                                       setEditingPayment(null);
                                     }}
-                                    className="flex items-center gap-2 w-full"
+                                    className="flex items-center gap-1 flex-1"
                                   >
                                     <input
                                       type="number"
@@ -1156,13 +1222,20 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                                 ) : (
                                   <>
                                     <div className="flex flex-col flex-1 min-w-0">
-                                      <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDate(p.date)}</span>
+                                      <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDateTime(p.date)}</span>
                                       <span className="text-[10px] text-slate-400">En cuenta ID: #{p.txId}</span>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
-                                      <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">
-                                        +{formatMoney(p.amount)}
-                                      </span>
+                                      <div className="flex flex-col items-end gap-0">
+                                        <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">
+                                          +{formatMoney(p.amount)}
+                                        </span>
+                                        {p.amount_bs && p.exchange_rate && (
+                                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-medium">
+                                            Eq. {p.amount_bs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} Bs.
+                                          </span>
+                                        )}
+                                      </div>
                                       <button
                                         onClick={() => setEditingPayment({ txId: p.txId, paymentId: p.paymentId, amount: p.amount })}
                                         className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded cursor-pointer"
@@ -1185,6 +1258,27 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                           })
                         )}
                       </div>
+                      {totalModalPaymentPages > 1 && (
+                        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+                          <span className="text-[10px] text-slate-500 font-semibold">Página {modalPaymentPage} de {totalModalPaymentPages}</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setModalPaymentPage(Math.max(1, modalPaymentPage - 1))}
+                              disabled={modalPaymentPage === 1}
+                              className="p-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setModalPaymentPage(Math.min(totalModalPaymentPages, modalPaymentPage + 1))}
+                              disabled={modalPaymentPage === totalModalPaymentPages}
+                              className="p-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Discounts */}
@@ -1203,7 +1297,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                           allDiscounts.map((d, idx) => (
                             <div key={idx} className="flex justify-between items-center text-xs py-1">
                               <div className="flex flex-col">
-                                <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDate(d.date)}</span>
+                                <span className="font-semibold text-slate-850 dark:text-slate-300 font-mono">{formatDateTime(d.date)}</span>
                                 <span className="text-[10px] text-slate-400">En cuenta ID: #{d.txId} (Descuento {d.percentage}%)</span>
                               </div>
                               <span className="font-bold text-purple-600 dark:text-purple-400 font-mono text-sm">
@@ -1236,6 +1330,252 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         );
       })()}
 
+
+      {/* REGISTER PAYMENT MODAL WITH LIVE PREVIEW */}
+      {paymentModalTx && (() => {
+        const tx = paymentModalTx;
+        const paid = tx.paidAmount || 0;
+        const currentDebt = tx.amount - paid;
+        const paymentVal = parseFloat(paymentAmount) || 0;
+        const newBalance = Math.max(0, currentDebt - paymentVal);
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <h3 className="font-bold text-slate-800 dark:text-slate-200">Registrar Abono - Cuenta #{tx.id}</h3>
+                <button onClick={() => { setPaymentModalTx(null); setPaymentAmount(""); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                
+                {/* Detalles de la deuda */}
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Concepto:</span>
+                    <span className="truncate max-w-[200px]" title={tx.description || 'Sin descripción'}>{tx.description || 'Sin descripción'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Vencimiento:</span>
+                    <span>{formatDate(tx.dueDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Monto Original:</span>
+                    <span className="font-mono">{formatMoney(tx.amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-rose-600 dark:text-rose-400 font-bold">
+                    <span>Deuda Restante:</span>
+                    <span className="font-mono">{formatMoney(currentDebt)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Monto a abonar</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-slate-500 font-mono">$</span>
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      max={currentDebt}
+                      value={paymentAmount}
+                      onChange={e => setPaymentAmount(e.target.value)}
+                      className="w-full pl-8 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:bg-slate-800 dark:text-slate-200 font-mono text-lg"
+                      placeholder="0.00"
+                      autoFocus
+                    />
+                    {currentRate && paymentVal > 0 && (
+                      <div className="text-[10px] text-slate-500 mt-1 font-medium">
+                        Eq. {(paymentVal * currentRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg flex justify-between items-center">
+                  <span className="text-sm text-emerald-800 dark:text-emerald-300 font-medium">Nuevo Saldo</span>
+                  <span className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-400">{formatMoney(newBalance)}</span>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-2">
+                <button
+                  onClick={() => { setPaymentModalTx(null); setPaymentAmount(""); }}
+                  className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => {
+                    const val = parseFloat(paymentAmount);
+                    if (!val || val <= 0) return;
+                    setSavingPayment(true);
+                    await onRegisterPayment(tx.id, val);
+                    
+                    setSelectedClientDetails((prev: any) => {
+                      if (!prev) return prev;
+                      const updatedTxs = prev.transactions.map((t: any) => {
+                        if (t.id !== tx.id) return t;
+                        const newPaid = (t.paidAmount || 0) + val;
+                        const newStatus = newPaid >= t.amount ? 'Pagado' : t.status === 'Cancelado' ? 'Cancelado' : 'Por cobrar';
+                        
+                        const tempPaymentId = Date.now() + Math.random();
+                        setTimeout(() => setHighlightedPaymentId(tempPaymentId), 10);
+                        setTimeout(() => setHighlightedPaymentId(null), 3000);
+                        const newPayment = {
+                          paymentId: tempPaymentId,
+                          amount: val,
+                          date: new Date().toISOString(),
+                          txId: tx.id
+                        };
+                        const updatedPayments = [...(t.payments || []), newPayment];
+                        
+                        return { ...t, paidAmount: newPaid, status: newStatus, payments: updatedPayments };
+                      });
+                      return { ...prev, transactions: updatedTxs };
+                    });
+                    
+                    setSavingPayment(false);
+                    setPaymentModalTx(null);
+                    setPaymentAmount("");
+                  }}
+                  disabled={!parseFloat(paymentAmount) || parseFloat(paymentAmount) <= 0 || savingPayment}
+                  className="px-4 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {savingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Confirmar Abono
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* REGISTER MULTI PAYMENT MODAL */}
+      {paymentModalMulti && (() => {
+        const paymentVal = parseFloat(paymentAmount) || 0;
+        
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <h3 className="font-bold text-slate-800 dark:text-slate-200">Registrar Abono Múltiple</h3>
+                <button onClick={() => { setPaymentModalMulti(null); setPaymentAmount(""); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                
+                {/* Lista de cuentas */}
+                <div className="max-h-[200px] overflow-y-auto space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-2 bg-slate-50 dark:bg-slate-800/20">
+                  <p className="text-xs font-bold text-slate-500 mb-2">Selecciona las cuentas a abonar:</p>
+                  {paymentModalMulti.map(tx => {
+                    const currentDebt = tx.amount - (tx.paidAmount || 0);
+                    const isSelected = selectedMultiTxs.includes(tx.id);
+                    return (
+                      <label key={tx.id} className={`flex items-center gap-3 p-2 rounded border cursor-pointer transition-colors ${isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedMultiTxs(prev => [...prev, tx.id]);
+                            else setSelectedMultiTxs(prev => prev.filter(id => id !== tx.id));
+                          }}
+                        />
+                        <div className="flex-1 flex justify-between text-sm">
+                          <span className="font-medium text-slate-700 dark:text-slate-300">Cuenta #{tx.id} - {formatDate(tx.dueDate)}</span>
+                          <span className="font-mono text-rose-600 dark:text-rose-400 font-bold">{formatMoney(currentDebt)}</span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Monto a abonar (se aplicará a CADA cuenta seleccionada)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-slate-500 font-mono">$</span>
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={paymentAmount}
+                      onChange={e => setPaymentAmount(e.target.value)}
+                      className="w-full pl-8 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none dark:bg-slate-800 dark:text-slate-200 font-mono text-lg"
+                      placeholder="0.00"
+                    />
+                    {currentRate && paymentVal > 0 && (
+                      <div className="text-[10px] text-slate-500 mt-1 font-medium">
+                        Eq. {(paymentVal * currentRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-lg flex justify-between items-center">
+                  <span className="text-sm text-indigo-800 dark:text-indigo-300 font-medium">Total a pagar ahora:</span>
+                  <span className="text-lg font-bold font-mono text-indigo-700 dark:text-indigo-400">{formatMoney(paymentVal * selectedMultiTxs.length)}</span>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-2">
+                <button
+                  onClick={() => { setPaymentModalMulti(null); setPaymentAmount(""); }}
+                  className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => {
+                    const val = parseFloat(paymentAmount);
+                    if (!val || val <= 0 || selectedMultiTxs.length === 0) return;
+                    setSavingPayment(true);
+                    
+                    for (const txId of selectedMultiTxs) {
+                      await onRegisterPayment(txId, val);
+                    }
+                    
+                    setSelectedClientDetails((prev: any) => {
+                      if (!prev) return prev;
+                      const updatedTxs = prev.transactions.map((t: any) => {
+                        if (!selectedMultiTxs.includes(t.id)) return t;
+                        const newPaid = (t.paidAmount || 0) + val;
+                        const newStatus = newPaid >= t.amount ? 'Pagado' : t.status === 'Cancelado' ? 'Cancelado' : 'Por cobrar';
+                        
+                        const tempPaymentId = Date.now() + Math.random();
+                        setTimeout(() => setHighlightedPaymentId(tempPaymentId), 10);
+                        setTimeout(() => setHighlightedPaymentId(null), 3000);
+                        const newPayment = {
+                          paymentId: tempPaymentId,
+                          amount: val,
+                          date: new Date().toISOString(),
+                          txId: t.id
+                        };
+                        const updatedPayments = [...(t.payments || []), newPayment];
+                        
+                        return { ...t, paidAmount: newPaid, status: newStatus, payments: updatedPayments };
+                      });
+                      return { ...prev, transactions: updatedTxs };
+                    });
+                    
+                    setSavingPayment(false);
+                    setPaymentModalMulti(null);
+                    setPaymentAmount("");
+                  }}
+                  disabled={!parseFloat(paymentAmount) || parseFloat(paymentAmount) <= 0 || savingPayment || selectedMultiTxs.length === 0}
+                  className="px-4 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {savingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Confirmar Abono Múltiple
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

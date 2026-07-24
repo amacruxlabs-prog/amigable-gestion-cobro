@@ -9,7 +9,9 @@ export interface Transaction {
   cedula?: string;
   paidAmount?: number; // Cumulative partial payments registered so far
   dueDate?: string; // ISO YYYY-MM-DD format
-  payments?: { id: number; amount: number; date: string }[]; // Historical payments registry
+  exchange_rate?: number | null;
+  amount_bs?: number | null;
+  payments?: { id: number; amount: number; date: string; exchange_rate?: number; amount_bs?: number }[]; // Historical payments registry
   discounts?: { percentage: number; amount: number; date: string }[]; // Historical discounts registry
   originalData?: Record<string, string>; // Keeps original spreadsheet row values for full fidelity
 }

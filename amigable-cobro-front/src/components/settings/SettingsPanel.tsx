@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Save, ArrowUp, ArrowDown, ShieldCheck, Power, Bot, CreditCard, Bell } from 'lucide-react';
+import { Settings, Save, ArrowUp, ArrowDown, ShieldCheck, Power, Bot, CreditCard, Bell, DollarSign } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useUI } from '../../contexts/UIContext';
 import { ApiEntitiesPanel } from './ApiEntitiesPanel';
+
+import { RatesSettingsPanel } from './RatesSettingsPanel';
 
 interface AiModel {
   id: string;
@@ -23,7 +25,7 @@ export const SettingsPanel = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [models, setModels] = useState<AiModel[]>([]);
-  const [activeTab, setActiveTab] = useState<'ai' | 'billing' | 'notifications'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'billing' | 'notifications' | 'integrations' | 'rates'>('ai');
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -140,30 +142,38 @@ export const SettingsPanel = ({
         <p className="text-sm text-slate-500 mt-1">Gestiona las preferencias y motores subyacentes.</p>
       </div>
 
-      <div className="flex items-center gap-1 border-b border-slate-200 mb-6">
+      <div className="flex items-center gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
         <button 
           onClick={() => setActiveTab('ai')}
-          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'ai' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap ${activeTab === 'ai' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
         >
           <Bot className="w-4 h-4" /> Motores IA
         </button>
         {isSuperadmin && (
           <button 
             onClick={() => setActiveTab('integrations')}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'integrations' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap ${activeTab === 'integrations' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
           >
             <ShieldCheck className="w-4 h-4" /> Integraciones API
           </button>
         )}
+        {!isSuperadmin && (
+          <button 
+            onClick={() => setActiveTab('rates')}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap ${activeTab === 'rates' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+          >
+            <DollarSign className="w-4 h-4" /> Tasas $
+          </button>
+        )}
         <button 
           onClick={() => setActiveTab('billing')}
-          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'billing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap ${activeTab === 'billing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
         >
           <CreditCard className="w-4 h-4" /> Facturación
         </button>
         <button 
           onClick={() => setActiveTab('notifications')}
-          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'notifications' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap ${activeTab === 'notifications' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
         >
           <Bell className="w-4 h-4" /> Notificaciones
         </button>
@@ -294,6 +304,10 @@ export const SettingsPanel = ({
             <h3 className="text-lg font-bold text-slate-700">Alertas del Sistema</h3>
             <p className="text-sm mt-1 font-medium text-slate-400 dark:text-slate-500">Próximamente...</p>
           </div>
+        )}
+
+        {activeTab === 'rates' && !isSuperadmin && (
+          <RatesSettingsPanel />
         )}
       </div>
     </div>

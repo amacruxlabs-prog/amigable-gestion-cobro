@@ -44,11 +44,11 @@ class TransactionController extends Controller
         }
 
         if ($request->has('start_date') && !empty($request->start_date)) {
-            $query->whereDate('created_at', '>=', $request->start_date);
+            $query->whereDate(DB::raw('COALESCE(due_date, created_at)'), '>=', $request->start_date);
         }
         
         if ($request->has('end_date') && !empty($request->end_date)) {
-            $query->whereDate('created_at', '<=', $request->end_date);
+            $query->whereDate(DB::raw('COALESCE(due_date, created_at)'), '<=', $request->end_date);
         }
 
         // KPIs for all filtered data (before pagination)
@@ -77,7 +77,9 @@ class TransactionController extends Controller
                 return [
                     'id' => (int)$p->id,
                     'amount' => (float)$p->amount,
-                    'date' => substr($p->created_at, 0, 10)
+                    'date' => $p->created_at,
+                    'exchange_rate' => $p->exchange_rate,
+                    'amount_bs' => $p->amount_bs
                 ];
             })->toArray();
 
@@ -90,6 +92,11 @@ class TransactionController extends Controller
             })->toArray();
         }
         
+        $currentRate = DB::table('exchange_rates')
+            ->where('business_id', $businessId)
+            ->orderBy('created_at', 'desc')
+            ->value('rate');
+
         return $this->successResponse([
             'transactions' => $transactions,
             'kpis' => [
@@ -100,7 +107,8 @@ class TransactionController extends Controller
                 'paidCount' => $allTxs->where('status', 'PAID')->count(),
                 'receivableCount' => $allTxs->where('status', 'PENDING')->count(),
                 'collectionRate' => $salesTotal > 0 ? ($paidTotal / $salesTotal) * 100 : 0
-            ]
+            ],
+            'current_exchange_rate' => $currentRate
         ], 'Lista de transacciones');
     }
 
@@ -111,6 +119,11 @@ class TransactionController extends Controller
         $paidAmount = $request->paid_amount ?? 0;
         $status = $paidAmount >= $request->total_amount ? 'PAID' : ($request->status === 'PAID' ? 'PAID' : 'PENDING');
 
+        $exchangeRate = \App\Models\ExchangeRate::where('business_id', $businessId)->orderBy('created_at', 'desc')->first();
+        $rate = $exchangeRate ? $exchangeRate->rate : null;
+        $amount_bs = $rate ? $request->total_amount * $rate : null;
+        $paid_amount_bs = $rate ? $paidAmount * $rate : null;
+
         $transactionId = DB::table('transactions')->insertGetId([
             'business_id' => $businessId,
             'client_name' => $request->client_name,
@@ -119,6 +132,8 @@ class TransactionController extends Controller
             'total_amount' => $request->total_amount,
             'paid_amount' => $paidAmount,
             'status' => $status,
+            'exchange_rate' => $rate,
+            'amount_bs' => $amount_bs,
             'created_at' => $request->created_at ? $request->created_at : now(),
             'due_date' => $request->due_date ?? $request->created_at ?? now(),
             'updated_at' => now(),
@@ -128,6 +143,8 @@ class TransactionController extends Controller
             DB::table('payments')->insert([
                 'transaction_id' => $transactionId,
                 'amount' => $paidAmount,
+                'exchange_rate' => $rate,
+                'amount_bs' => $paid_amount_bs,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -157,6 +174,10 @@ class TransactionController extends Controller
 
         $updateData = $request->validated();
         $updateData['updated_at'] = now();
+
+        if (isset($updateData['total_amount']) && $transaction->exchange_rate) {
+            $updateData['amount_bs'] = $updateData['total_amount'] * $transaction->exchange_rate;
+        }
 
         DB::table('transactions')->where('id', $id)->update($updateData);
 
@@ -220,10 +241,16 @@ class TransactionController extends Controller
             'updated_at' => now()
         ]);
 
+        $exchangeRate = \App\Models\ExchangeRate::where('business_id', $businessId)->orderBy('created_at', 'desc')->first();
+        $rate = $exchangeRate ? $exchangeRate->rate : null;
+        $payment_amount_bs = $rate ? $request->amount * $rate : null;
+
         // Registrar abono individual en el historial de pagos
         DB::table('payments')->insert([
             'transaction_id' => $id,
             'amount' => $request->amount,
+            'exchange_rate' => $rate,
+            'amount_bs' => $payment_amount_bs,
             'created_at' => now(),
             'updated_at' => now()
         ]);
@@ -263,6 +290,7 @@ class TransactionController extends Controller
 
         DB::table('payments')->where('id', $paymentId)->update([
             'amount' => $request->amount,
+            'amount_bs' => $payment->exchange_rate ? $request->amount * $payment->exchange_rate : null,
             'updated_at' => now(),
         ]);
 

@@ -47,6 +47,7 @@ use App\Http\Controllers\Tenant\SyncController;
 use App\Http\Controllers\Tenant\SettingsController;
 use App\Http\Controllers\Tenant\UserController;
 use App\Http\Controllers\Tenant\ActivityLogController as TenantActivityLogController;
+use App\Http\Controllers\Tenant\ExchangeRateController;
 
 Route::group([
     'prefix' => 'tenant', 
@@ -76,7 +77,13 @@ Route::group([
     Route::get('settings', [SettingsController::class, 'index']);
     Route::get('ai-credentials', [SettingsController::class, 'getAiCredentials']);
     Route::put('settings', [SettingsController::class, 'update']);
+    
+    Route::get('exchange-rates', [ExchangeRateController::class, 'index']);
+    Route::put('exchange-rates/type', [ExchangeRateController::class, 'updateType']);
+    Route::post('exchange-rates/manual', [ExchangeRateController::class, 'storeManualRate']);
+    
     Route::get('analytics/dashboard', [AnalyticsController::class, 'dashboard']);
+    Route::get('dashboard/init', [AnalyticsController::class, 'init']);
     Route::get('transactions/calendar', [TransactionController::class, 'calendar']);
     Route::get('transactions', [TransactionController::class, 'index']);
     Route::post('transactions', [TransactionController::class, 'store']);

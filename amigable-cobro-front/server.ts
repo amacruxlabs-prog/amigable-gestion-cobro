@@ -246,7 +246,15 @@ ${csvText.substring(0, 4000)}`;
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html') || filePath.endsWith('sw.js')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        }
+      }
+    }));
     app.get("/docs", (req, res) => { res.sendFile(path.join(process.cwd(), "docs.html")); });
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

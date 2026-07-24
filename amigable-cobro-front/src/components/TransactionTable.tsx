@@ -358,8 +358,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       {showAddForm && (
         <AddTransactionModal
           transactions={transactions}
-          onAddTransaction={(tx) => {
-            onAddTransaction(tx);
+          onAddTransaction={async (tx) => {
+            await onAddTransaction(tx);
             setShowAddForm(false);
           }}
           onClose={() => setShowAddForm(false)}

@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { PlusCircle, X, Users, UserPlus, Search } from 'lucide-react';
+import { PlusCircle, X, Users, UserPlus, Search, Loader2 } from 'lucide-react';
 import { Transaction } from '../types';
 
 interface AddTransactionModalProps {
   transactions: Transaction[];
-  onAddTransaction: (newTx: Omit<Transaction, 'id'>) => void;
+  onAddTransaction: (newTx: Omit<Transaction, 'id'>) => Promise<void> | void;
   onClose: () => void;
 }
 
@@ -107,34 +107,42 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         }),
       date: Yup.string().required('La fecha de transacción es obligatoria'),
     }),
-    onSubmit: (values) => {
-      const amt = parseFloat(values.amount);
-      const initialPaid = parseFloat(values.paidAmount) || 0;
-      
-      let finalPhone: string | undefined = undefined;
-      const trimmedPhone = values.phone.trim();
-      if (trimmedPhone) {
-        if (trimmedPhone.startsWith('+')) {
-          finalPhone = trimmedPhone;
-        } else {
-          finalPhone = `${values.phoneCountryCode}${trimmedPhone}`;
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        setSubmitting(true);
+        const amt = parseFloat(values.amount);
+        const initialPaid = parseFloat(values.paidAmount) || 0;
+        
+        let finalPhone: string | undefined = undefined;
+        const trimmedPhone = values.phone.trim();
+        if (trimmedPhone) {
+          if (trimmedPhone.startsWith('+')) {
+            finalPhone = trimmedPhone;
+          } else {
+            finalPhone = `${values.phoneCountryCode}${trimmedPhone}`;
+          }
         }
+
+        const finalCed = values.cedulaNumber.trim() ? `${values.cedulaType}-${values.cedulaNumber.trim()}` : undefined;
+        
+        await onAddTransaction({
+          clientName: values.clientName.trim(),
+          amount: amt,
+          status: values.status === 'Pagado' ? 'Pagado' : initialPaid === amt ? 'Pagado' : 'Cobrar',
+          date: values.date,
+          dueDate: values.dueDate,
+          phone: finalPhone,
+          cedula: finalCed,
+          location: values.location.trim() || undefined,
+          paidAmount: initialPaid,
+        });
+
+        onClose();
+      } catch (error) {
+        console.error("Error al guardar transacción", error);
+      } finally {
+        setSubmitting(false);
       }
-
-      const finalCed = values.cedulaNumber.trim() ? `${values.cedulaType}-${values.cedulaNumber.trim()}` : undefined;
-      onAddTransaction({
-        clientName: values.clientName.trim(),
-        amount: amt,
-        status: values.status === 'Pagado' ? 'Pagado' : initialPaid === amt ? 'Pagado' : 'Cobrar',
-        date: values.date,
-        dueDate: values.dueDate,
-        phone: finalPhone,
-        cedula: finalCed,
-        location: values.location.trim() || undefined,
-        paidAmount: initialPaid,
-      });
-
-      onClose();
     },
   });
 
@@ -174,7 +182,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl overflow-hidden animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl overflow-hidden animate-fade-in relative">
         <div className="p-5 border-b border-slate-150 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
@@ -414,12 +422,29 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <button
               type="submit"
               disabled={formik.isSubmitting}
-              className="btn btn-primary"
+              className="btn btn-primary flex items-center gap-2"
             >
-              {formik.isSubmitting ? 'Guardando...' : 'Guardar Cuenta'}
+              {formik.isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : (
+                <span>Guardar Cuenta</span>
+              )}
             </button>
           </div>
         </form>
+
+        {formik.isSubmitting && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/85 dark:bg-slate-900/85 backdrop-blur-xs rounded-xl transition-all">
+            <div className="flex flex-col items-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-indigo-100 dark:border-indigo-900">
+              <Loader2 className="w-9 h-9 text-indigo-600 dark:text-indigo-400 animate-spin mb-3" />
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Guardando Cuenta por Cobrar...</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Registrando la transacción en la base de datos</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

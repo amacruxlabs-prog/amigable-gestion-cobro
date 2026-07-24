@@ -16,7 +16,8 @@ import {
   PauseCircle,
   LogIn,
   LogOut,
-  Edit
+  Edit,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFormik } from 'formik';
@@ -274,6 +275,8 @@ const BusinessesView = () => {
 
   const [selectedBusinessDetails, setSelectedBusinessDetails] = useState<any | null>(null);
   const [editingBusiness, setEditingBusiness] = useState<any | null>(null);
+  const [impersonatingId, setImpersonatingId] = useState<number | null>(null);
+  const [impersonatingName, setImpersonatingName] = useState<string>('');
 
   const fetchBusinesses = async () => {
     try {
@@ -300,18 +303,25 @@ const BusinessesView = () => {
     }
   };
 
-  const handleImpersonate = async (id: number | null) => {
+  const handleImpersonate = async (id: number | null, name?: string) => {
     try {
+      setImpersonatingId(id);
+      setImpersonatingName(name || (id ? `Negocio #${id}` : 'Panel Global'));
       const response = await api.post('/superadmin/impersonate', { business_id: id });
       if (response.data?.data?.token) {
         await updateToken(response.data.data.token);
         toast(id ? 'Has ingresado al negocio' : 'Has vuelto al panel global', 'success');
         if (id) {
           window.location.href = '/panel/dashboard';
+        } else {
+          setImpersonatingId(null);
         }
+      } else {
+        setImpersonatingId(null);
       }
     } catch (error) {
       toast('Error al cambiar de contexto', 'error');
+      setImpersonatingId(null);
     }
   };
 
@@ -482,11 +492,20 @@ const BusinessesView = () => {
                 </td>
                 <td className="px-6 py-4 text-right space-x-2">
                   <button 
-                    onClick={() => handleImpersonate(b.id)}
-                    className="p-1.5 text-slate-400 hover:text-indigo-655 bg-slate-100 hover:bg-indigo-50/80 rounded transition-colors cursor-pointer" 
+                    onClick={() => handleImpersonate(b.id, b.name)}
+                    disabled={impersonatingId !== null}
+                    className={`p-1.5 rounded transition-colors cursor-pointer ${
+                      impersonatingId === b.id 
+                        ? 'bg-indigo-100 text-indigo-700' 
+                        : 'text-slate-400 hover:text-indigo-655 bg-slate-100 hover:bg-indigo-50/80 disabled:opacity-50'
+                    }`}
                     title="Entrar como este negocio"
                   >
-                    <LogIn className="w-4 h-4" />
+                    {impersonatingId === b.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-indigo-650" />
+                    ) : (
+                      <LogIn className="w-4 h-4" />
+                    )}
                   </button>
                   <button 
                     onClick={() => handleOpenEdit(b)}
@@ -792,14 +811,34 @@ const BusinessesView = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-between shrink-0">
-              <button
-                type="button"
-                onClick={() => handleOpenEdit(selectedBusinessDetails.business)}
-                className="btn btn-primary"
-              >
-                Editar Datos
-              </button>
+            <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center shrink-0">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEdit(selectedBusinessDetails.business)}
+                  className="btn btn-primary"
+                >
+                  Editar Datos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleImpersonate(selectedBusinessDetails.business.id, selectedBusinessDetails.business.name)}
+                  disabled={impersonatingId !== null}
+                  className="btn bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5"
+                >
+                  {impersonatingId === selectedBusinessDetails.business.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Accediendo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      <span>Acceder como Negocio</span>
+                    </>
+                  )}
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setSelectedBusinessDetails(null)}
@@ -1000,6 +1039,27 @@ const SettingsView = () => {
           </div>
         }
       />
+      {impersonatingId !== null && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-300 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center animate-scale-up">
+            <div className="relative mb-5 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border-2 border-indigo-200 dark:border-indigo-800 flex items-center justify-center">
+                <Building2 className="w-8 h-8 text-indigo-650 dark:text-indigo-400 animate-pulse" />
+              </div>
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-650 border-t-transparent animate-spin"></div>
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Apersonándote en el negocio...
+            </h3>
+            <p className="text-sm font-semibold text-indigo-650 dark:text-indigo-400 mb-3">
+              "{impersonatingName}"
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Generando sesión segura del tenant y cargando el panel transaccional...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
